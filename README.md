@@ -3,17 +3,13 @@
 <p align='center'>
     <b>Mass DM tool for guilded.gg.</b><br>
     <br>
-    <img src='https://media.discordapp.net/attachments/965433021698289685/971609142286491698/unknown.png'>
+    <img src='https://media.discordapp.net/attachments/965637518353629205/971697250705223690/Capture.PNG'>
 </p>
 
 -----
 
-YES the code is ugly and slow, its just POC. I will made it better don't worry :c
-
------
-
-- [ ] **email:pass:cookie and cookie format**
-- [ ] **Proxy support - HTTP/S**
+- [X] **email:pass:cookie and cookie format**
+- [X] **Proxy support - HTTP/S**
 - [X] **Username scrapper**
 - [X] **Avatart scrapper**
 - [X] **Server scrapper**
