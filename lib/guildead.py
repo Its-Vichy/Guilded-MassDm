@@ -70,7 +70,7 @@ class Guilded:
             "isSilent": isSilent,
             "isPrivate": isPrivate
         })
-        return r.json()
+        return r
     
     def edit_message(self, channel_id: str, message_id: str, message: str, confirmed: bool= False, isSilent: bool= False, isPrivate: bool= False, repliesTo: list= []):
         r = self.session.put(f'{self.base_url}/channels/{channel_id}/messages/{message_id}', json={
@@ -114,7 +114,7 @@ class Guilded:
     
     def join_server(self, invite_code: str):
         r = self.session.put(f'{self.base_url}/invites/{invite_code}')
-        return r.json()
+        return r
     
     def add_friend(self, ids: list):
         r = self.session.post(f'{self.base_url}/users/me/friendrequests', json={"friendUserIds": ids})
@@ -125,15 +125,14 @@ class Guilded:
         return r.json()
     
     def get_server_info(self, invite_code: str):
-        r = self.session.get(f'{self.base_url}/content/route/metadata?route=/{invite_code}')
+        r = self.session.get(f'{self.base_url}/content/route/metadata?route=%2F{invite_code}')
         return r.json()
 
-    def join_team(self, invite_code: str):
-        team_id = self.get_server_info(invite_code)['metadata']['team']['id']
+    def join_team(self, team_id: str):
         user_id = self.user['id']
         
         r = self.session.put(f'{self.base_url}/teams/{team_id}/members/{user_id}/join', json={'inviteId': None})
-        return r.json()
+        return r
 
     def set_activity(self, number: int = 1):
         # online, idle, dnd
@@ -190,7 +189,7 @@ class Guilded:
         return self.session.post(f'{self.base_url}/users/me/profile/images', json={'imageUrl': url})
     
     def get_guild_member(self, guild_id: str):
-        return self.session.get(f'{self.base_url}/teams/{guild_id}/members').json()
+        return self.session.get(f'{self.base_url}/teams/{guild_id}/members')
     
     def open_dm_channel(self, user_id: str):
-        return self.session.post(f'{self.base_url}/users/{self.user["id"]}/channels', json={"users":[{"id": user_id}]}).json()
+        return self.session.post(f'{self.base_url}/users/{self.user["id"]}/channels', json={"users":[{"id": user_id}]})
