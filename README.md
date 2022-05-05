@@ -8,6 +8,10 @@
 
 -----
 
+YES the code is ugly and slow, its just POC. I will made it better don't worry :c
+
+-----
+
 - [ ] **email:pass:cookie and cookie format**
 - [ ] **Proxy support - HTTP/S**
 - [X] **Username scrapper**
