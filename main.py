@@ -1,6 +1,7 @@
 from re import A
 import threading, json, time, itertools, math, os
-from colorama import Fore, init, Style; init()
+from colorama import Fore, init, Style
+from gridfs import Database; init()
 from lib.guildead import Guilded
 
 __lock__, __config__, __proxies__ = threading.Lock(), json.load(open('./config.json')), itertools.cycle(list(set(open('./data/proxies.txt', 'r+').read().splitlines())))
@@ -11,6 +12,7 @@ class Data:
         self.error_dm = 0
         self.accounts = []
         self.ids = []
+        self.sent = open('./data/done.txt', 'r+').read().splitlines()
 
 class Console:
     @staticmethod
@@ -136,6 +138,10 @@ class Utils:
                 database.error_dm += 1
                 Console.printf(f'({Fore.RED}{cookie[:30]}) ({database.error_dm}) Failed dm to {member_id}.')
                 pass
+                
+            with open('./data/done.txt', 'a+') as f:
+                f.write(f'{member_id}\n')
+                database.sent.append(member_id)
 
         thread_list = []
 
@@ -145,7 +151,7 @@ class Utils:
 
         for member in database.ids:
             while threading.active_count() >= threads:
-                time.sleep(1)
+                time.sleep(0.3)
                 
             T = threading.Thread(target=dm, args=[next(acc), member])
             thread_list.append(T)
@@ -154,8 +160,8 @@ class Utils:
         for thread in thread_list:
             thread.join()
         
-        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Sent dm to {len(database.ids)} users in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
-        time.sleep(6)
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Sent dm to {len(database.ids)} users in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s, success: {database.sent_dm}, error: {database.error_dm}')
+        input('press...')
 
 
 if __name__ == '__main__':
@@ -223,5 +229,9 @@ if __name__ == '__main__':
             db.ids = list(set(open('./data/id.txt').read().splitlines()))
             db.sent_dm = 0
             db.error_dm = 0
+
+            for id in db.ids:
+                if id in db.sent:
+                    db.ids.remove(id)
 
             Utils.mass_dm(message, threads, db)
