@@ -1,157 +1,241 @@
-import json, threading, httpx, random, string, time, binascii, os, json, itertools
+from re import A
+import threading, json, time, itertools, math, os
+from colorama import Fore, init, Style
+from gridfs import Database; init()
 from lib.guildead import Guilded
-from lib.console import Console
-from lib.mail import MailGwApi
-from lib.data import Data
 
-__config__ = json.load(open('./config.json', 'r+'))
+__lock__, __config__, __proxies__ = threading.Lock(), json.load(open('./config.json')), itertools.cycle(list(set(open('./data/proxies.txt', 'r+').read().splitlines())))
 
+class Data:
+    def __init__(self):
+        self.sent_dm = 0
+        self.error_dm = 0
+        self.accounts = []
+        self.ids = []
+        self.sent = open('./data/done.txt', 'r+').read().splitlines()
 
-class Creator(threading.Thread):
-    def __init__(self, proxy: str, data: Data) -> None:
-        self.api = Guilded(proxy)
-        self.proxy = proxy
-        self.data = data
+class Console:
+    @staticmethod
+    def print_logo():
+        os.system('cls && title G-MassDM' if os.name == 'nt' else 'clear')
+        print(f'''
+ {Fore.YELLOW}  ____ {Fore.LIGHTWHITE_EX}    __  __              {Fore.YELLOW} ____  __  __ {Fore.LIGHTWHITE_EX}
+ {Fore.YELLOW} / ___|{Fore.LIGHTWHITE_EX}   |  \/  | __ _ ___ ___{Fore.YELLOW}|  _ \|  \/  |{Fore.LIGHTWHITE_EX}
+ {Fore.YELLOW}| |  _ {Fore.LIGHTWHITE_EX}___| |\/| |/ _` / __/ __{Fore.YELLOW}| | | | |\/| |{Fore.LIGHTWHITE_EX}
+ {Fore.YELLOW}| |_| |{Fore.LIGHTWHITE_EX}___| |  | | (_| \__ \__ \{Fore.YELLOW} |_| | |  | |{Fore.LIGHTWHITE_EX}
+ {Fore.YELLOW} \____|{Fore.LIGHTWHITE_EX}   |_|  |_|\__,_|___/___/{Fore.YELLOW}____/|_|  |_|{Fore.LIGHTWHITE_EX} {Style.BRIGHT}github.com/its-vichy{Style.RESET_ALL}
+        
+        ''')
 
-        threading.Thread.__init__(self)
+    @staticmethod
+    def printf(content: str):
+        __lock__.acquire()
+        print(content.replace('(', f'({Fore.LIGHTBLUE_EX}').replace(')', f'{Fore.RESET})'))
+        __lock__.release()
 
-    def get_rstr(self, lenght: int) -> str:
-        return str(binascii.b2a_hex(os.urandom(lenght)).decode('utf-8'))
-
-    def create_account(self, username: str, mail: str, password: str, tp: MailGwApi=None) -> None:
-        data = {"extraInfo":{"platform": "desktop", "referrerId": __config__['referer']}, "name": username, "email": mail,"password": password,"fullName": username}
-
-        h = {
-            'authority': 'www.guilded.gg',
-            'method': 'POST',
-            'path': '/api/users?type=email',
-            'scheme': 'https',
-
-            'accept': 'application/json, text/javascript, */*; q=0.01',
-            'accept-encoding': 'gzip, deflate, br',
-            'accept-language': 'fr-FR,fr;q=0.9',
-            'content-type': 'application/json',
-            'guilded-client-id': f'{self.get_rstr(8)}-{self.get_rstr(4)}-{self.get_rstr(4)}-{self.get_rstr(4)}-{self.get_rstr(12)}',
-            'guilded-device-id': self.get_rstr(64),
-            'guilded-device-type': 'desktop',
-            'guilded-stag': self.get_rstr(32),
-            'origin': 'https://www.guilded.gg',
-            'referer': 'https://www.guilded.gg/',
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'same-origin',
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36',
-            'x-requested-with': 'XMLHttpRequest',
-            'dnt': '1',
-            "Sec-Ch-Ua": '" Not;A Brand";v="99", "Google Chrome";v="97", "Chromium";v="97"',
-            "Sec-Ch-Ua-Mobile": '?0',
-            "Sec-Ch-Ua-Platform": "macOS",
-        }
-
-        try:
-            with httpx.Client(proxies= self.proxy, headers= h) as client:
-                client.cookies = client.put('https://www.guilded.gg/api/data/event').cookies
-                
-                #client.headers['content-length'] = str(len(json.dumps(data)))
-                r= client.post(f'{self.api.base_url}/users?type=email', json= data)
-
-                if 'You have been banned.' in r.text:
-                    self.data.banned += 1
-                    Console.debug(f'[>] Banned')
-                    return
-                else:
-                    Console.debug(f'[>] {r.json()}')
-
-                success, cookies = self.api.login(mail, password)
-                
-                if success:
-                    Console.printf(f'[+] {username} has been created.')
-                    self.data.generated += 1
-
-                    data_mail= {"email": mail}
-                    #client.headers['content-lenght'] = str(len(json.dumps(data_mail)))
-                    client.post(f'{self.api.base_url}/email/verify', json= data_mail, cookies= cookies)
-                    
-                    #client.headers.pop('content-lenght')
-
-                    verif_token= None 
-                    while verif_token == None:
-                        time.sleep(1)
-                        try:
-                            if tp == None:
-                                verif_token = self.data.email.mail_list[mail.lower()]
-                            else:
-                                for mails in tp.fetch_inbox():
-                                    content = str(tp.get_message(mails['id'])['html'])
-                                    verif_token = content.split('https://www.guilded.gg/api/email/verify?token=')[1].split('"')[0]
-                        except:
-                            pass
-                    
-                    if tp == None:
-                        self.data.email.mail_list.pop(mail.lower())
-
-                    Console.printf(f'[*] Verification token found: {verif_token}')
-                    client.get('https://www.guilded.gg/api/email/verify?token=' + verif_token, cookies= cookies).text
-
-                    if self.api.check_mail_verified()['email']:
-                        Console.printf(f'[>] Email verified: {username}')
-                        self.data.verified += 1
-
-                        if __config__['invite_code'] != '':
-                            self.api.join_server(__config__['invite_code'])
-
-                        with open('./data/account.txt', 'a+') as f:
-                            f.write(f'{mail}:{password}:{cookies.get("hmac_signed_session")}\n')
-                        
-                        if __config__['save_cookies_separated']:
-                            with open('./data/cookies.txt', 'a+') as f:
-                                f.write(f'{cookies.get("hmac_signed_session")}\n')
-                        
-                        if __config__['set_online']:
-                            Console.printf(f'[~] Set online: {username}')
-                            self.api.set_activity(random.randint(1, 3))
-                            self.api.ping()
-
-                        if __config__['set_status']:
-                            Console.printf(f'[~] Set status: {username}')
-                            self.api.set_status(next(self.data.status) if __config__['custom_status'] else 'GuildeadGen - github.com/its-vichy')
-                        
-                        if __config__['set_bio']:
-                            Console.printf(f'[~] Set bio: {username}')
-                            self.api.set_bio(next(self.data.bio) if __config__['custom_bio'] else self.data.get_bio(self.proxy))
-                        
-                        if __config__['set_pfp']:
-                            Console.printf(f'[~] Set pfp: {username}')
-                            self.api.add_pfp(next(self.data.pfp))
-                else:
-                    Console.debug(f'[-] Error when logged in: {success}')
-        except Exception as e:
-            Console.debug(f'[*] Creation error: {e}')
-
-    def run(self) -> None:
-        password = "".join([random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10)])
-
-        if __config__['use_tempmail']:
-            api = MailGwApi(proxy= self.proxy, timeout=30)
-
-            email = api.get_mail(domain='bluebasketbooks.com.au')
+    @staticmethod
+    def print_modules():
+        print(f'''  > Options:
+        [{Fore.YELLOW}0{Fore.LIGHTWHITE_EX}] Scraper:
+            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Scrape id.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Scrape avatars.
+            - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Scrape usernames.
             
-            if email == None:
-                return
+        [{Fore.YELLOW}1{Fore.LIGHTWHITE_EX}] Joiner:
+            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Join guild.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Join team.
+            
+        [{Fore.YELLOW}2{Fore.LIGHTWHITE_EX}] MassDM:
+            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Mass DM guild.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Single DM Spam.
+        ''')
+
+class Utils:
+    @staticmethod
+    def load_accounts(database: Data):
+        def check(email: str, password: str, cookie: str):
+            api = Guilded(f'http://{next(__proxies__)}')
+            success, cookies = api.login(email, password)
+
+            if success:
+                database.accounts.append(api)
+                Console.printf(f'({cookies["hmac_signed_session"][:30]}) ({len(database.accounts)}) Success login in {Style.BRIGHT}{api.user["name"]}{Style.RESET_ALL}.')
+
+                if __config__['save_valid']:
+                    with open('./data/valid.txt', 'a+') as f:
+                        f.write(f'{email}:{password}:{cookies["hmac_signed_session"]}\n')
+            else:
+                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({len(database.accounts)}) Login failed.')
+
+        combo = list(set(open('./data/cookies.txt', 'r+').read().splitlines()))
+        thread_list = []
+
+        Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Loading {Style.BRIGHT}{len(combo)}{Style.RESET_ALL} accounts...\n')
+        start_time = time.time()
+
+        for account in combo:
+            while threading.active_count() >= __config__['loading_thread']:
+                time.sleep(1)
+
+            email, password, cookie = account.split(':')
+            T = threading.Thread(target=check, args=[email, password, cookie])
+            thread_list.append(T)
+            T.start()
+            
+        for thread in thread_list:
+            thread.join()
+        
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Logged in {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL}/{Style.BRIGHT}{len(combo)}{Style.RESET_ALL} accounts in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
+        time.sleep(3)
+    
+    @staticmethod
+    def join_accounts(invite: str, type: int, threads: int, database: Data):
+        def join(api: Guilded):
+            resp = None
+            cookie = api.session.cookies.get('hmac_signed_session')
+
+            if type == 0:
+                resp = api.join_server(invite).status_code
+            else:
+                resp = api.join_team(invite).status_code
+            
+            if resp == 200:
+                Console.printf(f'({cookie[:30]}) Success join.')
+            else:
+                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) Join failed.')
+
+        thread_list = []
+
+        Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Joining with {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
+        start_time = time.time()
+
+        for account in database.accounts:
+            while threading.active_count() >= threads:
+                time.sleep(1)
                 
-            self.create_account(next(self.data.usernames) if __config__['custom_usernames'] == True else "".join([random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10)]), email, password, api)
-        else:
-            email    = self.data.email.get_mail(__config__['mail'].split('@')[0])
-            self.create_account(next(self.data.usernames) if __config__['custom_usernames'] == True else "".join([random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10)]), email, password)
+            T = threading.Thread(target=join, args=[account])
+            thread_list.append(T)
+            T.start()
+            
+        for thread in thread_list:
+            thread.join()
+        
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Joined in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
+        time.sleep(3)
+
+    @staticmethod
+    def mass_dm(message: str, threads: int, database: Data):
+        def dm(api: Guilded, member_id: str):
+            cookie = api.session.cookies.get('hmac_signed_session')
+
+            try:
+                channel_id = api.open_dm_channel(member_id).json()['channel']['id']
+                resp = api.send_message(channel_id, message)
+                
+                if resp.status_code == 200:
+                    database.sent_dm += 1
+                    Console.printf(f'({cookie[:30]}) ({database.sent_dm}) Success sent dm to {member_id}.')
+                else:
+                    database.error_dm += 1
+                    Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({database.error_dm}) Failed dm to {member_id}.')
+            except:
+                database.error_dm += 1
+                Console.printf(f'({Fore.RED}{cookie[:30]}) ({database.error_dm}) Failed dm to {member_id}.')
+                pass
+                
+            with open('./data/done.txt', 'a+') as f:
+                f.write(f'{member_id}\n')
+                database.sent.append(member_id)
+
+        thread_list = []
+
+        Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Starting MassDM on {len(database.ids)} members with {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
+        start_time = time.time()
+        acc = itertools.cycle(database.accounts)
+
+        for member in database.ids:
+            while threading.active_count() >= threads:
+                time.sleep(0.3)
+                
+            T = threading.Thread(target=dm, args=[next(acc), member])
+            thread_list.append(T)
+            T.start()
+            
+        for thread in thread_list:
+            thread.join()
+        
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Sent dm to {len(database.ids)} users in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s, success: {database.sent_dm}, error: {database.error_dm}')
+        input('press...')
 
 
 if __name__ == '__main__':
-    proxies= itertools.cycle(open('./data/proxies.txt').read().splitlines())
-    Console.print_logo()
-    data = Data()
+    db = Data()
     
+    Console.print_logo()
+    Utils.load_accounts(db)
+    Console.print_logo()
+
     while True:
-        while threading.active_count() >= __config__['threads']:
-            time.sleep(1)
+        Console.print_logo()
+        Console.print_modules()
         
-        Creator(f'http://{next(proxies)}' if __config__['proxyless'] == False else None, data).start()
+        category = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Category:{Style.BRIGHT} '))
+        options  = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Option:{Style.BRIGHT} '))
+        
+        Console.print_logo()
+
+        if category == 0:
+            scrape_cookie = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Please provide cookie that was on the server: ')
+            guild_id      = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} GuildID/TeamID: ')
+            item          = None
+
+            api = Guilded(f'http://{next(__proxies__)}')
+            api.login_from_token(scrape_cookie)
+
+            if options == 0:
+                item = 'id'
+            elif options == 1:
+                item = 'profilePicture'
+            elif options == 2:
+                item = 'name'
+            
+            members = api.get_guild_member(guild_id).json()['members']
+            scrapped = []
+
+            for member in members:
+                if 'type' not in str(member):
+                    try:
+                        scrapped.append(member[item])
+                    except:
+                        pass
+
+            scrapped = list(set(scrapped))
+            
+            Console.printf(f'\n{Style.RESET_ALL}{Fore.LIGHTGREEN_EX}>{Fore.RESET} Scrapped {Style.BRIGHT}{len(scrapped)}{Style.RESET_ALL} {item}, saving into {Style.BRIGHT}./data/{item}.txt{Style.RESET_ALL}')
+
+            with open(f'./data/{item}.txt', 'a+') as f:
+                for thing in scrapped:
+                    f.write(thing.split("\n")[0] + '\n')
+            
+            input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Success, press key to continue..')
+        
+        if category == 1:
+            threads     = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
+            invite      = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} InviteCode/TeamID: ')
+
+            Utils.join_accounts(invite, options, threads, db)
+        
+        if category == 2:
+            message   = open('./data/message.txt', 'r+').read()
+            threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
+            guild_id  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} GuildID/TeamID: ')
+
+            db.ids = list(set(open('./data/id.txt').read().splitlines()))
+            db.sent_dm = 0
+            db.error_dm = 0
+
+            for id in db.ids:
+                if id in db.sent:
+                    db.ids.remove(id)
+
+            Utils.mass_dm(message, threads, db)
