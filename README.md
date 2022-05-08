@@ -3,7 +3,7 @@
 <p align='center'>
     <b>Mass DM tool for guilded.gg.</b><br>
     <br>
-    <img src='https://media.discordapp.net/attachments/965637518353629205/971697250705223690/Capture.PNG'>
+    <img src='https://media.discordapp.net/attachments/965434865971507260/972736625694089226/unknown.png'>
 </p>
 
 -----
@@ -35,6 +35,7 @@
 <p>
 
 ```txt
+- Add Server scrapper (online/all/with pfp etc..)
 - Add option to save mass-dm settings, because we are lazy guys :o
 - Add "restart" option to massDm.
 - Handle ratelimit (need to add timer).
