@@ -292,27 +292,22 @@ class Utils:
     def settings_page():
         Console.printf(f'{Style.RESET_ALL}{Fore.YELLOW}*~>{Fore.RESET} y = yes, n = no, d = default (don\'t change).\n')
 
-        scrape_cookie = db.scrape_settings['scrape_cookie']
-        scrape_default_pfp = db.scrape_settings['scrape_default_pfp']
-        with_role_only = db.scrape_settings['with_role_only']
-        scrape_online = db.scrape_settings['scrape_online']
-
         ask_scrape_cookie = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Please provide cookie that was on the server (cookie/d): ')
         ask_scrape_default_pfp = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape account with default pfp (y/n/d): ').lower()
         ask_with_role_only = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape only account with role (y/n/d): ').lower()
         ask_scrape_online = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape only connected account (y/n/d): ').lower()
 
         if ask_scrape_cookie != 'd':
-            db.scrape_settings['scrape_cookie'] = scrape_cookie
+            db.scrape_settings['scrape_cookie'] = ask_scrape_cookie
 
         if ask_scrape_default_pfp != 'd':
-            db.scrape_settings['scrape_default_pfp'] = True if scrape_default_pfp == 'y' else False
+            db.scrape_settings['scrape_default_pfp'] = True if ask_scrape_default_pfp == 'y' else False
 
         if ask_scrape_online != 'd':
-            db.scrape_settings['scrape_online'] = True if scrape_online == 'y' else False
+            db.scrape_settings['scrape_online'] = True if ask_scrape_online == 'y' else False
 
         if ask_with_role_only != 'd':
-            db.scrape_settings['with_role_only'] = True if with_role_only == 'y' else False
+            db.scrape_settings['with_role_only'] = True if ask_with_role_only == 'y' else False
 
         if input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Save settings (y/n): ').lower() == 'y':
             db.save_settings()
