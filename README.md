@@ -31,6 +31,23 @@
 
 -----
 
+<details><summary>UPDATE LOGS: 0.0.2</summary>
+<p>
+
+```txt
+- Add option to save mass-dm settings, because we are lazy guys :o
+- Add "restart" option to massDm.
+- Handle ratelimit (need to add timer).
+- Add mass pfp changer.
+- Fix duplicate dm / user id.
+- Other bug fix and code change.
+```
+
+</p>
+</details>
+
+-----
+
 <p align="center">
     <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/Its-Vichy/Guilded-MassDm?style=for-the-badge&logo=stylelint&color=gold">
     <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/Its-Vichy/Guilded-MassDm?style=for-the-badge&logo=stylelint&color=gold">
