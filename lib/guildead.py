@@ -12,6 +12,8 @@ class Guilded:
         self.session = requests.Session()
         self.session.proxies = {"http": proxy, "https": proxy} if proxy else None
 
+        self.ratelimit = None
+
         self.user = {}
 
     def login(self, email: str, password: str):
@@ -187,7 +189,8 @@ class Guilded:
         #url = self.session.post('https://media.guilded.gg/media/upload?dynamicMediaTypeId=UserAvatar', files={'file': open(image_path, 'rb')}, headers={'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary20al5Fdtd69OqIRT'}).json()
         
         return self.session.post(f'{self.base_url}/users/me/profile/images', json={'imageUrl': url})
-    
+
+    # https://www.guilded.gg/api/teams/user_id/members/detail
     def get_guild_member(self, guild_id: str):
         return self.session.get(f'{self.base_url}/teams/{guild_id}/members')
     
