@@ -15,17 +15,24 @@ class Guilded:
         self.ratelimit = None
 
         self.user = {}
+        self.profil = {}
 
     def login(self, email: str, password: str):
         r = self.session.post(f'{self.base_url}/login', json={'email': email, 'password': password, 'getMe': True})
-        
-        try:
-            self.user= r.json()['user']
-        except:
-            pass
 
-        return (False, {'error': 'Email or password is incorrect.'}) if 'Email or password is incorrect.' in r.text or r.cookies.get('guilded_mid') == None else (True, {'mid': r.cookies.get('guilded_mid'), 'hmac_signed_session': r.cookies.get('hmac_signed_session')})
-    
+        if 'Email or password is incorrect.' in r.text:
+            return (False, {'error': 'Email or password is incorrect.'})
+        elif 'You have been banned.' in r.text:
+            return (False, {'error': 'You have been banned.'})
+        else:
+            try:
+                self.user = r.json()['user']
+                self.profil = r.json()
+            except:
+                pass
+
+            return (True, {'mid': r.cookies.get('guilded_mid'), 'hmac_signed_session': r.cookies.get('hmac_signed_session')})
+
     def login_from_token(self, token: str, get_me: bool= False):
         self.session.cookies.set('hmac_signed_session', token)
 
@@ -190,9 +197,11 @@ class Guilded:
         
         return self.session.post(f'{self.base_url}/users/me/profile/images', json={'imageUrl': url})
 
-    # https://www.guilded.gg/api/teams/user_id/members/detail
     def get_guild_member(self, guild_id: str):
         return self.session.get(f'{self.base_url}/teams/{guild_id}/members')
+
+    #def get_guild_member_detail(self, guild_id: str):
+    #    return self.session.get(f'{self.base_url}/teams/{guild_id}/members/detail')
     
     def open_dm_channel(self, user_id: str):
         return self.session.post(f'{self.base_url}/users/{self.user["id"]}/channels', json={"users":[{"id": user_id}]})

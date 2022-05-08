@@ -47,4 +47,5 @@ class Console:
         
         [{Fore.YELLOW}3{Fore.LIGHTWHITE_EX}] Util:
             - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Mass pfp changer.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Config the tool.
         ''')
