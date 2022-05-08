@@ -1,4 +1,4 @@
-import threading, json, time, itertools, math
+import threading, json, time, itertools, math, random
 from colorama import Fore, init, Style; init()
 from lib.guildead import Guilded
 from lib.console import Console
@@ -6,6 +6,7 @@ from lib.data import Data
 
 __config__, __proxies__ = json.load(open('./config.json')), itertools.cycle(list(set(open('./data/proxies.txt', 'r+').read().splitlines())))
 
+# yes it can be improved lot of copy/past on other functions
 class Utils:
     @staticmethod
     def load_accounts(database: Data):
@@ -184,6 +185,110 @@ class Utils:
         input('press enter...')
 
     @staticmethod
+    def set_online(threads: int, database: Data):
+        def change(api: Guilded):
+            cookie = api.session.cookies.get('hmac_signed_session')
+
+            r1 = api.set_activity(random.randint(1, 3))
+
+            if r1.status_code == 200:
+                Console.printf(f'({cookie[:30]}) Successfully set activity.')
+            else:
+                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) Set activity failed.')
+            
+            r2 = api.ping()
+
+            if r2.status_code == 200:
+                Console.printf(f'({cookie[:30]}) Successfully sent ping.')
+            else:
+                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) Ping failed.')
+
+        thread_list = []
+
+        Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Starting onliner on {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
+        start_time = time.time()
+
+        for account in database.accounts:
+            while threading.active_count() >= threads:
+                time.sleep(1)
+
+            t = threading.Thread(target=change, args=[account])
+            thread_list.append(t)
+            t.start()
+
+        for thread in thread_list:
+            thread.join()
+
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Job done in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
+        input('press enter...')
+
+    @staticmethod
+    def set_status(threads: int, database: Data):
+        status = itertools.cycle(database.status)
+
+        def change(api: Guilded):
+            cookie = api.session.cookies.get('hmac_signed_session')
+
+            r1 = api.set_status(next(status), random.randint(90002200, 90002539)) # https://raw.githubusercontent.com/GuildedAPI/datatables/main/reactions.json
+
+            if r1.status_code == 200:
+                Console.printf(f'({cookie[:30]}) Successfully set status.')
+            else:
+                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) Set status failed.')
+
+        thread_list = []
+
+        Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Set status on {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
+        start_time = time.time()
+
+        for account in database.accounts:
+            while threading.active_count() >= threads:
+                time.sleep(1)
+
+            t = threading.Thread(target=change, args=[account])
+            thread_list.append(t)
+            t.start()
+
+        for thread in thread_list:
+            thread.join()
+
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Job done in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
+        input('press enter...')
+    
+    @staticmethod
+    def set_bio(threads: int, database: Data):
+        bio = itertools.cycle(database.bio)
+
+        def change(api: Guilded):
+            cookie = api.session.cookies.get('hmac_signed_session')
+
+            r1 = api.set_bio(next(bio))
+
+            if r1.status_code == 200:
+                Console.printf(f'({cookie[:30]}) Successfully set bio.')
+            else:
+                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) Set bio failed.')
+
+        thread_list = []
+
+        Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Set bio on {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
+        start_time = time.time()
+
+        for account in database.accounts:
+            while threading.active_count() >= threads:
+                time.sleep(1)
+
+            t = threading.Thread(target=change, args=[account])
+            thread_list.append(t)
+            t.start()
+
+        for thread in thread_list:
+            thread.join()
+
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Job done in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
+        input('press enter...')
+
+    @staticmethod
     def settings_page():
         Console.printf(f'{Style.RESET_ALL}{Fore.YELLOW}*~>{Fore.RESET} y = yes, n = no, d = default (don\'t change).\n')
 
@@ -212,6 +317,18 @@ class Utils:
         if input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Save settings (y/n): ').lower() == 'y':
             db.save_settings()
 
+    @staticmethod
+    def get_teams():
+        if db.scrape_settings['scrape_cookie'] != "":
+            api = Guilded(f'http://{next(__proxies__)}')
+            api.login_from_token(db.scrape_settings['scrape_cookie'])
+            teams = api.get_me()['teams']
+
+            print('')
+
+            for i, team in enumerate(teams):
+                print(f' #{i} | {team["id"]} | {team["name"]}')
+
 if __name__ == '__main__':
     db = Data()
 
@@ -226,7 +343,7 @@ if __name__ == '__main__':
         category = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Category:{Style.BRIGHT} ')
         options  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Option:{Style.BRIGHT} ')
 
-        if not (category.isdigit() and options.isdigit() and 0 <= int(category) <= 4 and 0 <= int(options) <= 3):
+        if not (category.isdigit() and options.isdigit() and 0 <= int(category) <= 4 and 0 <= int(options) <= 6):
             input(f'{Style.RESET_ALL}{Fore.RED}*~>{Fore.RESET} Invalid choice.')
             continue
 
@@ -251,10 +368,7 @@ if __name__ == '__main__':
             api = Guilded(f'http://{next(__proxies__)}')
             api.login_from_token(scrape_cookie)
 
-            teams = api.get_me()['teams']
-
-            for i, team in enumerate(teams):
-                print(f'#{i} | {team["id"]} | {team["name"]}')
+            Utils.get_teams()
 
             guild_id = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} TeamID: ')
 
@@ -304,8 +418,12 @@ if __name__ == '__main__':
             input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Success, press key to continue..')
 
         if category == 1:
-            threads     = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
-            invite      = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} InviteCode/TeamID: ')
+            threads = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
+            
+            if options == 1:
+                Utils.get_teams()
+            
+            invite = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} InviteCode/TeamID: ')
 
             Utils.join_accounts(invite, options, threads, db)
 
@@ -313,13 +431,7 @@ if __name__ == '__main__':
             message   = open('./data/message.txt', 'r+', encoding='utf-8', errors='ignore').read()
             threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
 
-            if db.scrape_settings['scrape_cookie'] != "":
-                api = Guilded(f'http://{next(__proxies__)}')
-                api.login_from_token(db.scrape_settings['scrape_cookie'])
-                teams = api.get_me()['teams']
-
-                for i, team in enumerate(teams):
-                    print(f'#{i} | {team["id"]} | {team["name"]}')
+            Utils.get_teams()
 
             guild_id = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} TeamID: ')
 
@@ -345,3 +457,27 @@ if __name__ == '__main__':
 
             if options == 1:
                 Utils.settings_page()
+            
+            if options == 2:
+                threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
+                Utils.set_online(threads, db)
+            
+            if options == 3:
+                threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
+                Utils.set_status(threads, db)
+            
+            if options == 4:
+                threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
+                Utils.set_bio(threads, db)
+            
+            if options == 5:
+                pfp = list(set(open('./data/profilePicture.txt', 'r+').read().splitlines()))
+
+                if not pfp:
+                    Console.printf(f'{Style.RESET_ALL}{Fore.RED}*~>{Fore.RESET}  Please put provide pfp link in {Style.BRIGHT}profilePicture.txt{Style.RESET_ALL}.')
+                else:
+                    threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
+                    Utils.change_pfp(pfp, threads, db)
+                    Utils.set_bio(threads, db)
+                    Utils.set_status(threads, db)
+                    Utils.set_online(threads, db)

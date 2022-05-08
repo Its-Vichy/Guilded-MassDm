@@ -13,6 +13,8 @@ class Data:
         self.invalid_account = 0
 
         self.sent = list(set(open('./data/done.txt', 'r+').read().splitlines()))
+        self.status = list(set(open('./data/userStatus.txt', 'r+',  encoding='utf-8', errors='ingore').read().splitlines()))
+        self.bio = list(set(open('./data/userBio.txt', 'r+', encoding='utf-8', errors='ingore').read().splitlines()))
 
         self.scrape_settings = json.load(open('./settings/scrape_settings.json', 'r+'))
 

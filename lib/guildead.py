@@ -147,11 +147,11 @@ class Guilded:
         # online, idle, dnd
 
         r = self.session.post(f'{self.base_url}/users/me/presence', json={'status': number})
-        return r.json()
+        return r
     
     def ping(self):
         r = self.session.put(f'{self.base_url}/users/me/ping', json={})
-        return r.json()
+        return r
     
     def set_status(self, text: str, customReactionId: int = 90002573):
         r = self.session.post(f'{self.base_url}/users/me/status', json={
@@ -184,13 +184,13 @@ class Guilded:
             "customReactionId": customReactionId,
             "expireInMs": 0
         })
-        return r.json()
+        return r
     
     def set_bio(self, text: str):
         user_id = self.user['id']
 
         r = self.session.put(f'{self.base_url}/users/{user_id}/profilev2', json={"userId": user_id,"aboutInfo":{"tagLine": text}})
-        return r.json()
+        return r
 
     def add_pfp(self, url):
         #url = self.session.post('https://media.guilded.gg/media/upload?dynamicMediaTypeId=UserAvatar', files={'file': open(image_path, 'rb')}, headers={'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary20al5Fdtd69OqIRT'}).json()

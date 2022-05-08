@@ -1,13 +1,13 @@
 from colorama import Fore, init, Style; init()
 import threading, os, json
 
-__lock__, __config__ = threading.Lock(), json.load(open('./config.json'))
+__lock__, __config__, __version__ = threading.Lock(), json.load(open('./config.json')), '0.0.3'
 
 
 class Console:
     @staticmethod
     def print_logo():
-        os.system('cls && title G-MassDM' if os.name == 'nt' else 'clear')
+        os.system(f'cls && title G-MassDM - {__version__}' if os.name == 'nt' else 'clear')
         print(f'''
  {Fore.YELLOW}  ____ {Fore.LIGHTWHITE_EX}    __  __              {Fore.YELLOW} ____  __  __ {Fore.LIGHTWHITE_EX}
  {Fore.YELLOW} / ___|{Fore.LIGHTWHITE_EX}   |  \/  | __ _ ___ ___{Fore.YELLOW}|  _ \|  \/  |{Fore.LIGHTWHITE_EX}
@@ -48,4 +48,8 @@ class Console:
         [{Fore.YELLOW}3{Fore.LIGHTWHITE_EX}] Util:
             - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Mass pfp changer.
             - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Config the tool.
+            - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Onliner.
+            - [{Fore.LIGHTBLUE_EX}3{Fore.LIGHTWHITE_EX}] Mass status changer.
+            - [{Fore.LIGHTBLUE_EX}4{Fore.LIGHTWHITE_EX}] Mass bio changer.
+            - [{Fore.LIGHTBLUE_EX}5{Fore.LIGHTWHITE_EX}] Mass spoof (bio+status+pfp+online).
         ''')
