@@ -3,7 +3,7 @@
 <p align='center'>
     <b>Mass DM tool for guilded.gg.</b><br>
     <br>
-    <img src='https://media.discordapp.net/attachments/965434865971507260/972736625694089226/unknown.png'>
+    <img src='https://media.discordapp.net/attachments/972677989349351514/972809267054800967/unknown.png'>
 </p>
 
 -----
@@ -13,7 +13,7 @@
 - [X] **Proxy support - HTTP/S**
 - [X] **Guild / Team joiner**
 - [X] **Username scrapper**
-- [X] **Avatart scrapper**
+- [X] **Avatar scrapper**
 - [X] **Mass pfp changer**
 - [X] **Mass dm**
 
@@ -31,10 +31,20 @@
 
 -----
 
-<details><summary>UPDATE LOGS: 0.0.2</summary>
+<details><summary>UPDATE LOGS:</summary>
 <p>
 
-```txt
+- Scrapping menu
+
+- Mass pfp changer.
+- Config the tool.
+- Onliner.
+- Mass status changer.
+- Mass bio changer.
+- Mass spoof (bio+status+pfp+online).
+
+0.0.2
+
 - Add Server scrapper (online/all/with pfp etc..)
 - Add option to save mass-dm settings, because we are lazy guys :o
 - Add "restart" option to massDm.
@@ -42,7 +52,6 @@
 - Add mass pfp changer.
 - Fix duplicate dm / user id.
 - Other bug fix and code change.
-```
 
 </p>
 </details>
