@@ -8,13 +8,26 @@
 
 -----
 
+- [X] **Server scrapper (online/all/with pfp)**
 - [X] **email:pass:cookie and cookie format**
 - [X] **Proxy support - HTTP/S**
+- [X] **Guild / Team joiner**
 - [X] **Username scrapper**
 - [X] **Avatart scrapper**
-- [X] **Server scrapper**
-- [X] **Guild / Team joiner**
+- [X] **Mass pfp changer**
 - [X] **Mass dm**
+
+-----
+
+| Name | Description | 
+| ---  | ---  |
+| `scrape_cookie` | The cookie of the account that you will use for scraping, this account need to be on the server. |
+| `scrape_default_pfp` | Scrape members with default pfp, helpfull to ignore bots. |
+| `with_role_only` | Scrape members with role only (ex: anti-bot verification), helpfull to ignore bots. |
+| `scrape_online` | Scrape only connected members. |
+| `loading_thread` | The number of thread that will be used to connect trought account. |
+| `save_valid` | Save valid account on text file. |
+| `debug` | If you want to see errors, or debug the code. |
 
 -----
 
