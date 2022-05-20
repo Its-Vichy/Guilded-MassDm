@@ -28,6 +28,9 @@
 | `loading_thread` | The number of thread that will be used to connect trought account. |
 | `save_valid` | Save valid account on text file. |
 | `debug` | If you want to see errors, or debug the code. |
+| `join_main` | Join scrapped server with the scrape account. |
+| `max_scrape` | Max invite to scrape. |
+| `min_member` | Minimum members to scrape. |
 
 -----
 
