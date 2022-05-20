@@ -14,6 +14,7 @@
 - [X] **Guild / Team joiner**
 - [X] **Username scrapper**
 - [X] **Avatar scrapper**
+- [X] **Guild scrapper**
 - [X] **Mass pfp changer**
 - [X] **Mass dm**
 
