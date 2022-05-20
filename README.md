@@ -38,6 +38,14 @@
 <details><summary>UPDATE LOGS:</summary>
 <p>
 
+0.0.4
+
+- Guild scrapper
+- Loading proxy error handling
+    
+    
+0.0.3
+    
 - Scrapping menu
 
 - Mass pfp changer.
