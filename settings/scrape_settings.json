@@ -1,6 +1,9 @@
 {
-    "scrape_cookie": "",
+    "scrape_cookie": "1366df49058a254b34f8dc9bac7169fbf158fe82c7258b6b4fb1c88890e03448f9195fb711a7d0dfac666ccd43973e.1426c03a4af4a07656525bff2e4b7f35.ffe9333fa601b9b8788ed26c7f6c93b0212160a3e0d7b19ee8961c6c492eb4d1",
     "scrape_default_pfp": false,
     "with_role_only": true,
-    "scrape_online": true
+    "scrape_online": true,
+    "join_main": false,
+    "max_scrape": 1000,
+    "min_member": 15
 }

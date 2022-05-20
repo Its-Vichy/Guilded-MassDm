@@ -52,4 +52,5 @@ class Console:
             - [{Fore.LIGHTBLUE_EX}3{Fore.LIGHTWHITE_EX}] Mass status changer.
             - [{Fore.LIGHTBLUE_EX}4{Fore.LIGHTWHITE_EX}] Mass bio changer.
             - [{Fore.LIGHTBLUE_EX}5{Fore.LIGHTWHITE_EX}] Mass spoof (bio+status+pfp+online).
+            - [{Fore.LIGHTBLUE_EX}6{Fore.LIGHTWHITE_EX}] Server scrapper.
         ''')

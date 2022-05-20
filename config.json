@@ -1,5 +1,5 @@
 {
-    "loading_thread": 100,
+    "loading_thread": 30,
     "save_valid": true,
     "debug": true
 }

@@ -205,3 +205,6 @@ class Guilded:
     
     def open_dm_channel(self, user_id: str):
         return self.session.post(f'{self.base_url}/users/{self.user["id"]}/channels', json={"users":[{"id": user_id}]})
+
+    def get_servers(self, limit: int=10):
+        return self.session.post(f'{self.base_url}/explore/teams', json={"filters":{},"limit":limit,"sections":["allTeams"],"offset":{"createdAt":"2022-05-20T01:11:58.827Z"}})

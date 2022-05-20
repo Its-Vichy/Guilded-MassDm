@@ -10,27 +10,36 @@ __config__, __proxies__ = json.load(open('./config.json')), itertools.cycle(list
 class Utils:
     @staticmethod
     def load_accounts(database: Data):
-        def check(email: str, password: str, cookie: str):
-            api = Guilded(f'http://{next(__proxies__)}')
-            success, cookies = api.login(email, password)
-
-            if success:
-                database.accounts.append(api)
-                Console.printf(f'({cookies["hmac_signed_session"][:30]}) ({len(database.accounts)}) Success login in {Style.BRIGHT}{api.user["name"]}{Style.RESET_ALL}.')
-
-                if __config__['save_valid']:
-                    with open('./data/valid.txt', 'a+') as f:
-                        f.write(f'{email}:{password}:{cookies["hmac_signed_session"]}\n')
-            else:
-                if cookies["error"] == "You have been banned.":
-                    database.banned_account += 1
-
-                if cookies["error"] == "Email or password is incorrect.":
-                    database.invalid_account += 1
-
-                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({len(database.accounts)}) Login failed ({Fore.YELLOW}{cookies["error"]}).')
-
         combo = list(set(open('./data/cookies.txt', 'r+').read().splitlines()))
+
+        def check(email: str, password: str, cookie: str):
+            while True:
+                try:
+                    api = Guilded(f'http://{next(__proxies__)}')
+                    success, cookies = api.login(email, password)
+
+                    if success:
+                        database.accounts.append(api)
+                        Console.printf(f'({cookies["hmac_signed_session"][:30]}) ({len(database.accounts)}) Success login in {Style.BRIGHT}{api.user["name"]}{Style.RESET_ALL}.')
+
+                        if __config__['save_valid']:
+                            with open('./data/valid.txt', 'a+') as f:
+                                f.write(f'{email}:{password}:{cookies["hmac_signed_session"]}\n')
+                    else:
+                        if cookies["error"] == "You have been banned.":
+                            database.banned_account += 1
+
+                        if cookies["error"] == "Email or password is incorrect.":
+                            database.invalid_account += 1
+
+                        Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({len(database.accounts)}) Login failed ({Fore.YELLOW}{cookies["error"]}).')
+
+                    break
+                except Exception as e:
+                    Console.debug(str(e))
+                    continue
+
+
         thread_list = []
 
         Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Loading {Style.BRIGHT}{len(combo)}{Style.RESET_ALL} accounts...\n')
@@ -49,7 +58,7 @@ class Utils:
             thread.join()
 
         Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Logged in {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL}/{Style.BRIGHT}{len(combo)}{Style.RESET_ALL} accounts in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s, banned: {database.banned_account}, invalid: {database.invalid_account}')
-        time.sleep(1) # uwu
+        time.sleep(2) # uwu
 
     @staticmethod
     def join_accounts(invite: str, type: int, threads: int, database: Data):
@@ -296,6 +305,21 @@ class Utils:
         ask_scrape_default_pfp = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape account with default pfp (y/n/d): ').lower()
         ask_with_role_only = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape only account with role (y/n/d): ').lower()
         ask_scrape_online = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape only connected account (y/n/d): ').lower()
+        join_main  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Join scrapped servers with main account (y/n/d): ').lower()
+        max_scrape  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape amount (default: 10/d): ')
+        min_member = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Mimimum server member scrape (number/d): ')
+
+        if str(max_scrape) != 'd':
+            if max_scrape is None:
+                max_scrape = 10
+
+            db.scrape_settings['max_scrape'] = int(max_scrape)
+
+        if str(min_member) != 'd':
+            db.scrape_settings['min_member'] = int(min_member)
+
+        if join_main != 'd':
+            db.scrape_settings['join_main'] = join_main
 
         if ask_scrape_cookie != 'd':
             db.scrape_settings['scrape_cookie'] = ask_scrape_cookie
@@ -476,3 +500,43 @@ if __name__ == '__main__':
                     Utils.set_bio(threads, db)
                     Utils.set_status(threads, db)
                     Utils.set_online(threads, db)
+
+            if options == 6:
+                use_settings  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Use default settings (y/n): ').lower()
+
+                if use_settings != 'y':
+                    Utils.settings_page()
+
+                scrape_cookie = db.scrape_settings['scrape_cookie']
+
+                api = Guilded(f'http://{next(__proxies__)}')
+                api.login_from_token(scrape_cookie, True)
+
+                scrapped_teams = api.get_servers(db.scrape_settings['max_scrape']).json()['allTeams']['teams']
+
+                valid = 0
+                ttl = len(scrapped_teams)
+
+                for team in scrapped_teams:
+                    team_id = team['teamId']
+                    members_count = team['measurements']['numMembers']
+
+                    if members_count < db.scrape_settings["min_member"]:
+                        continue
+
+                    valid += 1
+
+                    Console.printf(f'({scrape_cookie[:30]}) ({valid}/{ttl}) Scrapped {team_id}, {Fore.GREEN}{Style.BRIGHT}{members_count}/{db.scrape_settings["min_member"]} members{Style.RESET_ALL}.')
+
+                    if db.scrape_settings['join_main']:
+                        resp = api.join_team(team_id).status_code
+
+                        if resp == 200:
+                            Console.printf(f'({scrape_cookie[:30]}) Success join {team_id}.')
+                        else:
+                            Console.printf(f'({Fore.LIGHTRED_EX}{scrape_cookie[:30]}) Join failed {team_id}.')
+
+                    with open('./data/scraped_teams.txt', 'a+') as f:
+                        f.write(f'{team_id}\n')
+
+                input()
