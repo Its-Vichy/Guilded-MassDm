@@ -1,7 +1,7 @@
 from colorama import Fore, init, Style; init()
 import threading, os, json
 
-__lock__, __config__, __version__ = threading.Lock(), json.load(open('./config.json')), '0.0.3'
+__lock__, __config__, __version__ = threading.Lock(), json.load(open('./config.json')), '0.0.4'
 
 
 class Console:
@@ -37,6 +37,7 @@ class Console:
             - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Scrape id.
             - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Scrape avatars.
             - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Scrape usernames.
+            - [{Fore.LIGHTBLUE_EX}3{Fore.LIGHTWHITE_EX}] Server Guild.
             
         [{Fore.YELLOW}1{Fore.LIGHTWHITE_EX}] Joiner:
             - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Join guild.
@@ -52,5 +53,4 @@ class Console:
             - [{Fore.LIGHTBLUE_EX}3{Fore.LIGHTWHITE_EX}] Mass status changer.
             - [{Fore.LIGHTBLUE_EX}4{Fore.LIGHTWHITE_EX}] Mass bio changer.
             - [{Fore.LIGHTBLUE_EX}5{Fore.LIGHTWHITE_EX}] Mass spoof (bio+status+pfp+online).
-            - [{Fore.LIGHTBLUE_EX}6{Fore.LIGHTWHITE_EX}] Server scrapper.
         ''')

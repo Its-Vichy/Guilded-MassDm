@@ -371,68 +371,107 @@ if __name__ == '__main__':
 
         # Yes the code was pretty ugly but work, for the moment..
         if category == 0:
-            guild_id      = None
-            item          = None
+            if options == 3:
+                use_settings  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Use default settings (y/n): ').lower()
 
-            use_settings  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Use default settings (y/n): ').lower()
+                if use_settings != 'y':
+                    Utils.settings_page()
 
-            if use_settings != 'y':
-                Utils.settings_page()
+                scrape_cookie = db.scrape_settings['scrape_cookie']
 
-            scrape_cookie = db.scrape_settings['scrape_cookie']
-            scrape_default_pfp = db.scrape_settings['scrape_default_pfp']
-            with_role_only = db.scrape_settings['with_role_only']
-            scrape_online = db.scrape_settings['scrape_online']
+                api = Guilded(f'http://{next(__proxies__)}')
+                api.login_from_token(scrape_cookie, True)
 
-            api = Guilded(f'http://{next(__proxies__)}')
-            api.login_from_token(scrape_cookie)
+                scrapped_teams = api.get_servers(db.scrape_settings['max_scrape']).json()['allTeams']['teams']
 
-            Utils.get_teams()
+                valid = 0
+                ttl = len(scrapped_teams)
 
-            guild_id = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} TeamID: ')
+                for team in scrapped_teams:
+                    team_id = team['teamId']
+                    members_count = team['measurements']['numMembers']
 
-            if options == 0:
-                item = 'id'
-            elif options == 1:
-                item = 'profilePicture'
-            elif options == 2:
-                item = 'name'
+                    if members_count < db.scrape_settings["min_member"]:
+                        continue
 
-            resp = api.get_guild_member(guild_id)
+                    valid += 1
 
-            if resp.status_code is not 200:
-                input(f'{Style.RESET_ALL}{Fore.RED}*~>{Fore.RESET} Error when scraping members.')
-                Console.debug(resp.json())
-                continue
+                    Console.printf(f'({scrape_cookie[:30]}) ({valid}/{ttl}) Scrapped {team_id}, {Fore.GREEN}{Style.BRIGHT}{members_count}/{db.scrape_settings["min_member"]} members{Style.RESET_ALL}.')
 
-            members = resp.json()['members']
-            scrapped = []
+                    if db.scrape_settings['join_main']:
+                        resp = api.join_team(team_id).status_code
 
-            for member in members:
-                if 'type' not in str(member):
-                    try:
-                        if str(item) in member:
-                            if member[item]:
-                                if 'roleIds' in str(member):
-                                    if not member['roleIds'] and with_role_only:
-                                        continue
+                        if resp == 200:
+                            Console.printf(f'({scrape_cookie[:30]}) Success join {team_id}.')
+                        else:
+                            Console.printf(f'({Fore.LIGHTRED_EX}{scrape_cookie[:30]}) Join failed {team_id}.')
 
-                                if scrape_online:
-                                    if 'userPresenceStatus' not in str(member):
-                                        continue
+                    with open('./data/scraped_teams.txt', 'a+') as f:
+                        f.write(f'{team_id}\n')
+            else:
 
-                                scrapped.append(member[item])
-                    except Exception as e:
-                        Console.debug(f'Scrape error: {e}')
-                        pass
+                guild_id      = None
+                item          = None
 
-            scrapped = list(set(scrapped))
+                use_settings  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Use default settings (y/n): ').lower()
 
-            Console.printf(f'\n{Style.RESET_ALL}{Fore.LIGHTGREEN_EX}>{Fore.RESET} Scrapped {Style.BRIGHT}{len(scrapped)}{Style.RESET_ALL} {item}, saving into {Style.BRIGHT}./data/{item}.txt{Style.RESET_ALL}')
+                if use_settings != 'y':
+                    Utils.settings_page()
 
-            with open(f'./data/{item}.txt', 'a+', encoding='utf-8', errors='ignore') as f:
-                for thing in scrapped:
-                    f.write(thing.split("\n")[0] + '\n')
+                scrape_cookie = db.scrape_settings['scrape_cookie']
+                scrape_default_pfp = db.scrape_settings['scrape_default_pfp']
+                with_role_only = db.scrape_settings['with_role_only']
+                scrape_online = db.scrape_settings['scrape_online']
+
+                api = Guilded(f'http://{next(__proxies__)}')
+                api.login_from_token(scrape_cookie)
+
+                Utils.get_teams()
+
+                guild_id = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} TeamID: ')
+
+                if options == 0:
+                    item = 'id'
+                elif options == 1:
+                    item = 'profilePicture'
+                elif options == 2:
+                    item = 'name'
+
+                resp = api.get_guild_member(guild_id)
+
+                if resp.status_code is not 200:
+                    input(f'{Style.RESET_ALL}{Fore.RED}*~>{Fore.RESET} Error when scraping members.')
+                    Console.debug(resp.json())
+                    continue
+
+                members = resp.json()['members']
+                scrapped = []
+
+                for member in members:
+                    if 'type' not in str(member):
+                        try:
+                            if str(item) in member:
+                                if member[item]:
+                                    if 'roleIds' in str(member):
+                                        if not member['roleIds'] and with_role_only:
+                                            continue
+
+                                    if scrape_online:
+                                        if 'userPresenceStatus' not in str(member):
+                                            continue
+
+                                    scrapped.append(member[item])
+                        except Exception as e:
+                            Console.debug(f'Scrape error: {e}')
+                            pass
+
+                scrapped = list(set(scrapped))
+
+                Console.printf(f'\n{Style.RESET_ALL}{Fore.LIGHTGREEN_EX}>{Fore.RESET} Scrapped {Style.BRIGHT}{len(scrapped)}{Style.RESET_ALL} {item}, saving into {Style.BRIGHT}./data/{item}.txt{Style.RESET_ALL}')
+
+                with open(f'./data/{item}.txt', 'a+', encoding='utf-8', errors='ignore') as f:
+                    for thing in scrapped:
+                        f.write(thing.split("\n")[0] + '\n')
 
             input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Success, press key to continue..')
 
@@ -500,43 +539,3 @@ if __name__ == '__main__':
                     Utils.set_bio(threads, db)
                     Utils.set_status(threads, db)
                     Utils.set_online(threads, db)
-
-            if options == 6:
-                use_settings  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Use default settings (y/n): ').lower()
-
-                if use_settings != 'y':
-                    Utils.settings_page()
-
-                scrape_cookie = db.scrape_settings['scrape_cookie']
-
-                api = Guilded(f'http://{next(__proxies__)}')
-                api.login_from_token(scrape_cookie, True)
-
-                scrapped_teams = api.get_servers(db.scrape_settings['max_scrape']).json()['allTeams']['teams']
-
-                valid = 0
-                ttl = len(scrapped_teams)
-
-                for team in scrapped_teams:
-                    team_id = team['teamId']
-                    members_count = team['measurements']['numMembers']
-
-                    if members_count < db.scrape_settings["min_member"]:
-                        continue
-
-                    valid += 1
-
-                    Console.printf(f'({scrape_cookie[:30]}) ({valid}/{ttl}) Scrapped {team_id}, {Fore.GREEN}{Style.BRIGHT}{members_count}/{db.scrape_settings["min_member"]} members{Style.RESET_ALL}.')
-
-                    if db.scrape_settings['join_main']:
-                        resp = api.join_team(team_id).status_code
-
-                        if resp == 200:
-                            Console.printf(f'({scrape_cookie[:30]}) Success join {team_id}.')
-                        else:
-                            Console.printf(f'({Fore.LIGHTRED_EX}{scrape_cookie[:30]}) Join failed {team_id}.')
-
-                    with open('./data/scraped_teams.txt', 'a+') as f:
-                        f.write(f'{team_id}\n')
-
-                input()
