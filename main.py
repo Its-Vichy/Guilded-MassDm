@@ -12,15 +12,23 @@ class Utils:
     def load_accounts(database: Data):
         combo = list(set(open('./data/cookies.txt', 'r+').read().splitlines()))
 
-        def check(email: str, password: str, cookie: str):
+        def check(email: str, password: str, cookie: str, user_id: str):
             while True:
                 try:
                     api = Guilded(f'http://{next(__proxies__)}')
-                    success, cookies = api.login(email, password)
+
+                    if __config__['login']:
+                        success, cookies = api.login(email, password)
+                    else:
+                        cookies = {}
+
+                        api.login_from_token(cookie)
+                        success, cookies['hmac_signed_session'] = True, cookie
+                        api.user_id = user_id
 
                     if success:
                         database.accounts.append(api)
-                        Console.printf(f'({cookies["hmac_signed_session"][:30]}) ({len(database.accounts)}) Success login in {Style.BRIGHT}{api.user["name"]}{Style.RESET_ALL}.')
+                        Console.printf(f'({cookies["hmac_signed_session"][:30]}) ({len(database.accounts)}) Success login in {Style.BRIGHT}{api.user["name"] if __config__["login"] else "token"}{Style.RESET_ALL}.')
 
                         if __config__['save_valid']:
                             with open('./data/valid.txt', 'a+') as f:
@@ -39,7 +47,6 @@ class Utils:
                     Console.debug(str(e))
                     continue
 
-
         thread_list = []
 
         Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Loading {Style.BRIGHT}{len(combo)}{Style.RESET_ALL} accounts...\n')
@@ -49,8 +56,8 @@ class Utils:
             while threading.active_count() >= __config__['loading_thread']:
                 time.sleep(1)
 
-            email, password, cookie = account.split(':')
-            t = threading.Thread(target=check, args=[email, password, cookie])
+            email, password, cookie, user_id = account.split(':')
+            t = threading.Thread(target=check, args=[email, password, cookie, user_id])
             thread_list.append(t)
             t.start()
 
@@ -96,9 +103,14 @@ class Utils:
         input('press enter...')
 
     @staticmethod
-    def mass_dm(message: str, threads: int, database: Data):
+    def mass_dm(message: str, threads: int, database: Data, single_mod: bool = False):
+        cookie_blacklist = []
+
         def dm(api: Guilded, member_id: str):
             cookie = api.session.cookies.get('hmac_signed_session')
+
+            if cookie in cookie_blacklist or member_id in database.locked_dm:
+                return
 
             try:
                 c_resp = api.open_dm_channel(member_id)
@@ -106,25 +118,43 @@ class Utils:
                 if 'TooManyRequestsError' in str(c_resp.json()):
                     database.ratelimited += 1
                     Console.printf(f'({Fore.YELLOW}{cookie[:30]}) ({database.ratelimited}) Ratelimited.')
-                    return
+                    cookie_blacklist.append(cookie)
                 else:
+                    if c_resp.status_code == 412 and "Not allowed to send message" in str(c_resp.json()):
+                        Console.printf(f'({Fore.CYAN}{cookie[:30]}) ({database.ratelimited}) dm channels locked.')
+
+                        with open('./data/locked_dm.txt', 'a+') as f:
+                            f.write(f'{member_id}\n')
+                            database.locked_dm.append(member_id)
+                            database.locked += 1
+
+                        database.error_dm += 1
+
+                        if single_mod:
+                            cookie_blacklist.append(cookie)
+                        return
+
                     # time to track errors
                     if c_resp.status_code != 200:
+                        database.error_dm += 1
+                        Console.printf(f'({Fore.MAGENTA}{cookie[:30]}) ({database.ratelimited}) Error when oppening dm channel.')
                         Console.debug(c_resp.json())
+                        return
 
-                channel_id = c_resp.json()['channel']['id']
-                resp = api.send_message(channel_id, message)
+                    channel_id = c_resp.json()['channel']['id']
+                    resp = api.send_message(channel_id, message)
 
-                if resp.status_code == 200:
-                    database.sent_dm += 1
-                    Console.printf(f'({cookie[:30]}) ({database.sent_dm}) Success sent dm to {member_id}.')
+                    if resp.status_code == 200:
+                        database.sent_dm += 1
+                        Console.printf(f'({cookie[:30]}) ({database.sent_dm}) Success sent dm to {member_id}.')
 
-                    with open('./data/done.txt', 'a+') as f:
-                        f.write(f'{member_id}\n')
-                        database.sent.append(member_id)
-                else:
-                    database.error_dm += 1
-                    Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({database.error_dm}) Failed dm to {member_id}.')
+                        with open('./data/done.txt', 'a+') as f:
+                            f.write(f'{member_id}\n')
+                            database.sent.append(member_id)
+                    else:
+                        database.error_dm += 1
+                        Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({database.error_dm}) Failed dm to {member_id} ({resp.json()}).')
+
             except Exception as e:
                 database.error_dm += 1
                 Console.debug(str(e))
@@ -139,12 +169,12 @@ class Utils:
             acc = itertools.cycle(database.accounts)
 
             for member in database.ids:
-                if member in database.sent:
+                if member in database.sent and not single_mod and member not in database.locked_dm:
                     continue
 
                 while threading.active_count() >= threads:
                     time.sleep(0.3)
-
+                
                 t = threading.Thread(target=dm, args=[next(acc), member])
                 thread_list.append(t)
                 t.start()
@@ -152,9 +182,9 @@ class Utils:
             for thread in thread_list:
                 thread.join()
 
-            Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Sent dm to {len(database.ids)} users in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s, success: {database.sent_dm}, error: {database.error_dm}, ratelimit: {database.ratelimited}')
+            Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Sent dm to {len(database.ids)} users in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s, success: {database.sent_dm}, error: {database.error_dm}, ratelimit: {database.ratelimited}, locked dm: {database.locked}')
 
-            if input('restart ? (y/n): ').lower() != 'y':
+            if input('restart with whitelisted accounts ? (y/n): ').lower() != 'y':
                 break
 
             Console.print_logo()
@@ -351,6 +381,10 @@ class Utils:
 if __name__ == '__main__':
     db = Data()
 
+    if __config__['overwrite_valid']:
+        with open('./data/valid.txt', 'w+') as f:
+            f.truncate(0)
+
     Console.print_logo()
     Utils.load_accounts(db)
     Console.print_logo()
@@ -486,22 +520,35 @@ if __name__ == '__main__':
             Utils.join_accounts(invite, options, threads, db)
 
         if category == 2:
-            message   = open('./data/message.txt', 'r+', encoding='utf-8', errors='ignore').read()
             threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
 
-            Utils.get_teams()
+            if options == 0:
+                message   = open('./data/message.txt', 'r+', encoding='utf-8', errors='ignore').read()
+                Utils.get_teams()
 
-            guild_id = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} TeamID: ')
+                guild_id = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} TeamID: ')
 
-            db.ids = list(set(open('./data/id.txt').read().splitlines()))
-            db.sent_dm = 0
-            db.error_dm = 0
+                db.ids = list(set(open('./data/id.txt').read().splitlines()))
+                db.locked_dm = list(set(open('./data/locked_dm.txt').read().splitlines()))
+                db.sent_dm = 0
+                db.error_dm = 0
+                db.locked = 0
 
-            for uuid in db.ids:
-                if uuid in db.sent:
-                    db.ids.remove(uuid)
+                for uuid in db.ids:
+                    if uuid in db.sent:
+                        db.ids.remove(uuid)
 
-            Utils.mass_dm(message, threads, db)
+                Utils.mass_dm(message, threads, db)
+
+            if options == 1:
+                message = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Message: ')
+                dm_id = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} UserID: ')
+                dm_number = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} NumberOfDms / tokens: '))
+
+                for _ in range(dm_number*len(db.accounts)):
+                    db.ids.append(dm_id)
+                
+                Utils.mass_dm(message, threads, db, True)
 
         if category == 3:
             if options == 0:
@@ -512,9 +559,6 @@ if __name__ == '__main__':
                 else:
                     threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
                     Utils.change_pfp(pfp, threads, db)
-
-            if options == 1:
-                Utils.settings_page()
             
             if options == 2:
                 threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
@@ -539,3 +583,13 @@ if __name__ == '__main__':
                     Utils.set_bio(threads, db)
                     Utils.set_status(threads, db)
                     Utils.set_online(threads, db)
+        
+        if category == 4:
+            if options == 0:
+                Utils.settings_page()
+            
+            if options == 1:
+                new_db = Data()
+                db = new_db
+                
+                Utils.load_accounts(db)

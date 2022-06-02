@@ -14,6 +14,7 @@ class Guilded:
 
         self.ratelimit = None
 
+        self.user_id = ''
         self.user = {}
         self.profil = {}
 
@@ -28,6 +29,7 @@ class Guilded:
             try:
                 self.user = r.json()['user']
                 self.profil = r.json()
+                self.user_id = self.user['id']
             except:
                 pass
 
@@ -42,6 +44,7 @@ class Guilded:
     def get_me(self):
         resp = self.session.get(f'{self.base_url}/me?isLogin=false&v2=true').json()
         self.user = resp['user']
+        self.user_id = self.user['id']
 
         return resp
 
@@ -138,7 +141,7 @@ class Guilded:
         return r.json()
 
     def join_team(self, team_id: str):
-        user_id = self.user['id']
+        user_id = self.user_id
         
         r = self.session.put(f'{self.base_url}/teams/{team_id}/members/{user_id}/join', json={'inviteId': None})
         return r
@@ -187,7 +190,7 @@ class Guilded:
         return r
     
     def set_bio(self, text: str):
-        user_id = self.user['id']
+        user_id = self.user_id
 
         r = self.session.put(f'{self.base_url}/users/{user_id}/profilev2', json={"userId": user_id,"aboutInfo":{"tagLine": text}})
         return r
@@ -204,7 +207,7 @@ class Guilded:
     #    return self.session.get(f'{self.base_url}/teams/{guild_id}/members/detail')
     
     def open_dm_channel(self, user_id: str):
-        return self.session.post(f'{self.base_url}/users/{self.user["id"]}/channels', json={"users":[{"id": user_id}]})
+        return self.session.post(f'{self.base_url}/users/{self.user_id}/channels', json={"users":[{"id": user_id}]})
 
     def get_servers(self, limit: int=10):
         return self.session.post(f'{self.base_url}/explore/teams', json={"filters":{},"limit":limit,"sections":["allTeams"],"offset":{"createdAt":"2022-05-20T01:11:58.827Z"}})

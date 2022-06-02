@@ -1,7 +1,7 @@
 from colorama import Fore, init, Style; init()
 import threading, os, json
 
-__lock__, __config__, __version__ = threading.Lock(), json.load(open('./config.json')), '0.0.4'
+__lock__, __config__, __version__ = threading.Lock(), json.load(open('./config.json')), '0.0.5'
 
 
 class Console:
@@ -45,12 +45,17 @@ class Console:
             
         [{Fore.YELLOW}2{Fore.LIGHTWHITE_EX}] MassDM:
             - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Mass DM guild.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Single Mass DM.
+            - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Channel spammer.
         
-        [{Fore.YELLOW}3{Fore.LIGHTWHITE_EX}] Util:
+        [{Fore.YELLOW}3{Fore.LIGHTWHITE_EX}] Mass Actions:
             - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Mass pfp changer.
-            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Config the tool.
-            - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Onliner.
+            - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Mass Onliner.
             - [{Fore.LIGHTBLUE_EX}3{Fore.LIGHTWHITE_EX}] Mass status changer.
             - [{Fore.LIGHTBLUE_EX}4{Fore.LIGHTWHITE_EX}] Mass bio changer.
             - [{Fore.LIGHTBLUE_EX}5{Fore.LIGHTWHITE_EX}] Mass spoof (bio+status+pfp+online).
+        
+        [{Fore.YELLOW}4{Fore.LIGHTWHITE_EX}] Util:
+            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Config the tool.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Reload files (id, cookies etc...).
         ''')

@@ -1,5 +1,7 @@
 {
-    "loading_thread": 30,
+    "loading_thread": 500,
     "save_valid": true,
-    "debug": true
+    "debug": true,
+    "login": false,
+    "overwrite_valid": true
 }
