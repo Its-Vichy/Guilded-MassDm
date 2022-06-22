@@ -9,7 +9,12 @@
 -----
 
 ```
-Known issue: proxy checker "crash"
+Known issue: proxy checker "crash/freeze".
+
+⚠️ Information:
+Due to guilded security patch, login-loading mode is patched (need to verify the e-mail). 
+Please be sure to use proxy or vpn when you are using guilded otherwise they will ban your ip address.
+Your account will be terminated every somes hours if you are making somes spam, account generation etc.. (i got termed every hours)
 ```
 
 -----
