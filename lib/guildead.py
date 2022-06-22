@@ -1,25 +1,37 @@
 # Lasted wrapper version: https://github.com/Its-Vichy/Guildead
 
-import requests, uuid, random, string
+import requests, uuid, random, string, itertools
+
+from requests.models import Response
 
 class Exploit:
     def blank_message():
         return [random.choice(string.ascii_letters + string.ascii_uppercase + string.digits) for _ in range(random.randint(1000, 1000))]
 
 class Guilded:
-    def __init__(self, proxy: str= None):
+    def __init__(self, proxy: itertools.cycle):
         self.base_url = "https://www.guilded.gg/api"
         self.session = requests.Session()
-        self.session.proxies = {"http": proxy, "https": proxy} if proxy else None
+        self.proxy = proxy
 
         self.ratelimit = None
 
         self.user_id = ''
         self.user = {}
         self.profil = {}
+    
+    def post(self, path: str, json: dict) -> Response:
+        while True:
+            p = 'http://' + next(self.proxy)
+            self.session.proxies = {"http": p, "https": p} if self.proxy else None
+
+            try:
+                return self.session.post(path, json=json)
+            except Exception as e:
+                continue
 
     def login(self, email: str, password: str):
-        r = self.session.post(f'{self.base_url}/login', json={'email': email, 'password': password, 'getMe': True})
+        r = self.post(f'{self.base_url}/login', json={'email': email, 'password': password, 'getMe': True})
 
         if 'Email or password is incorrect.' in r.text:
             return (False, {'error': 'Email or password is incorrect.'})
@@ -49,7 +61,7 @@ class Guilded:
         return resp
 
     def send_message(self, channel_id: str, message: str, confirmed: bool= False, isSilent: bool= False, isPrivate: bool= False, repliesTo: list= []):
-        r = self.session.post(f'{self.base_url}/channels/{channel_id}/messages', json={
+        r = self.post(f'{self.base_url}/channels/{channel_id}/messages', json={
             "messageId": str(uuid.uuid1()),
             "content": {
                 "object": "value",
@@ -129,7 +141,7 @@ class Guilded:
         return r
     
     def add_friend(self, ids: list):
-        r = self.session.post(f'{self.base_url}/users/me/friendrequests', json={"friendUserIds": ids})
+        r = self.post(f'{self.base_url}/users/me/friendrequests', json={"friendUserIds": ids})
         return r.json()
     
     def check_mail_verified(self):
@@ -149,7 +161,7 @@ class Guilded:
     def set_activity(self, number: int = 1):
         # online, idle, dnd
 
-        r = self.session.post(f'{self.base_url}/users/me/presence', json={'status': number})
+        r = self.post(f'{self.base_url}/users/me/presence', json={'status': number})
         return r
     
     def ping(self):
@@ -157,7 +169,7 @@ class Guilded:
         return r
     
     def set_status(self, text: str, customReactionId: int = 90002573):
-        r = self.session.post(f'{self.base_url}/users/me/status', json={
+        r = self.post(f'{self.base_url}/users/me/status', json={
             "content": {
                 "object": "value",
                 "document": {

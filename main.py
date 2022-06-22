@@ -1,13 +1,70 @@
-import threading, json, time, itertools, math, random
+import threading, json, time, itertools, math, random, httpx
 from colorama import Fore, init, Style; init()
 from lib.guildead import Guilded
 from lib.console import Console
 from lib.data import Data
 
-__config__, __proxies__ = json.load(open('./config.json')), itertools.cycle(list(set(open('./data/proxies.txt', 'r+').read().splitlines())))
+__config__, __proxy_config__, __proxies__ = json.load(open('./settings/config.json')), json.load(open('./settings/proxy_settings.json')), itertools.cycle([])
 
 # yes it can be improved lot of copy/past on other functions
 class Utils:
+    @staticmethod
+    def load_proxies():
+        pl = list(set(open('./data/proxies.txt', 'r+').read().splitlines()))
+
+        if __proxy_config__['overwrite_valid_proxies'] and __proxy_config__['check_proxies']:
+            with open('./data/proxies.txt', 'w+') as f:
+                f.truncate(0)
+
+        def check(proxy: str):
+            checking_start_time = time.time()
+
+            try:
+                httpx.get('https://www.guilded.gg', proxies='http://'+proxy, timeout= httpx.Timeout(__proxy_config__['proxy_timeout'], connect=__proxy_config__['proxy_connect_timeout']))
+                Console.printf(f'({Fore.LIGHTCYAN_EX}{len(pl)}{Fore.RESET}) ({proxy}) {Fore.LIGHTGREEN_EX}Online{Fore.RESET}, {Style.BRIGHT}{math.floor(time.time() - checking_start_time)}{Style.RESET_ALL}s.')
+            
+                with open('./data/proxies.txt', 'a+') as f:
+                    f.write(f'{proxy}\n')
+                    f.close()
+
+            except Exception as e:
+                Console.printf(f'({Fore.LIGHTCYAN_EX}{len(pl)}{Fore.RESET}) ({proxy}) {Fore.LIGHTRED_EX}Dead.{Fore.RESET}')
+                pl.remove(proxy)
+                pass
+        
+        if __proxy_config__['scrape_proxies']:
+            base = len(pl)
+
+            for url in list(set(open('./data/proxy_urls.txt', 'r+').read().splitlines())):
+                for proxy in list(set(httpx.get(url).text.split('\n'))):
+                    pl.append(proxy.split('\n')[0].strip())
+
+            Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Scrapped {Style.BRIGHT}{len(pl)-base}{Style.RESET_ALL} proxies.\n')
+
+        pln = len(pl)
+
+        if __proxy_config__['check_proxies']:
+            thread_list = []
+
+            Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Checking {Style.BRIGHT}{pln}{Style.RESET_ALL} proxies...\n')
+            start_time = time.time()
+
+            for proxy in pl:
+                while threading.active_count() >= __proxy_config__['proxy_checking_thread']:
+                    time.sleep(1)
+
+                t = threading.Thread(target=check, args=[proxy])
+                thread_list.append(t)
+                t.start()
+
+            for thread in thread_list:
+                thread.join()
+
+            Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Working proxies: {Style.BRIGHT}{len(pl)}{Style.RESET_ALL}/{Style.BRIGHT}{pln}{Style.RESET_ALL}, checked in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
+            time.sleep(2)
+            
+        return itertools.cycle(pl)
+
     @staticmethod
     def load_accounts(database: Data):
         combo = list(set(open('./data/cookies.txt', 'r+').read().splitlines()))
@@ -15,7 +72,7 @@ class Utils:
         def check(email: str, password: str, cookie: str, user_id: str):
             while True:
                 try:
-                    api = Guilded(f'http://{next(__proxies__)}')
+                    api = Guilded(__proxies__)
 
                     if __config__['login']:
                         success, cookies = api.login(email, password)
@@ -25,6 +82,8 @@ class Utils:
                         api.login_from_token(cookie)
                         success, cookies['hmac_signed_session'] = True, cookie
                         api.user_id = user_id
+                    
+                    database.accounts_ids.append(api.user_id)
 
                     if success:
                         database.accounts.append(api)
@@ -57,6 +116,7 @@ class Utils:
                 time.sleep(1)
 
             email, password, cookie, user_id = account.split(':')
+            database.accounts_ids.append(user_id)
             t = threading.Thread(target=check, args=[email, password, cookie, user_id])
             thread_list.append(t)
             t.start()
@@ -121,7 +181,7 @@ class Utils:
                     cookie_blacklist.append(cookie)
                 else:
                     if c_resp.status_code == 412 and "Not allowed to send message" in str(c_resp.json()):
-                        Console.printf(f'({Fore.CYAN}{cookie[:30]}) ({database.ratelimited}) dm channels locked.')
+                        Console.printf(f'({Fore.CYAN}{cookie[:30]}) ({database.locked}) dm channels locked.')
 
                         with open('./data/locked_dm.txt', 'a+') as f:
                             f.write(f'{member_id}\n')
@@ -137,7 +197,7 @@ class Utils:
                     # time to track errors
                     if c_resp.status_code != 200:
                         database.error_dm += 1
-                        Console.printf(f'({Fore.MAGENTA}{cookie[:30]}) ({database.ratelimited}) Error when oppening dm channel.')
+                        Console.printf(f'({Fore.MAGENTA}{cookie[:30]}) ({database.error_dm}) Error when oppening dm channel.')
                         Console.debug(c_resp.json())
                         return
 
@@ -169,7 +229,7 @@ class Utils:
             acc = itertools.cycle(database.accounts)
 
             for member in database.ids:
-                if member in database.sent and not single_mod and member not in database.locked_dm:
+                if member in database.sent and not single_mod or member in database.locked_dm or member in database.accounts_ids:
                     continue
 
                 while threading.active_count() >= threads:
@@ -365,11 +425,43 @@ class Utils:
 
         if input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Save settings (y/n): ').lower() == 'y':
             db.save_settings()
+    
+    @staticmethod
+    def proxy_settings_page():
+        Console.printf(f'{Style.RESET_ALL}{Fore.YELLOW}*~>{Fore.RESET} y = yes, n = no, d = default (don\'t change).\n')
+
+        proxy_checking_thread = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Proxy checking threads (number/d): ')
+        check_proxies = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Check proxy (y/n/d): ').lower()
+        scrape_proxies = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Scrape proxy (y/n/d): ').lower()
+        overwrite_valid_proxies = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Overwrite valid proxies (y/n/d): ').lower()
+        proxy_timeout  = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Proxy timeout (number/d): ')
+        proxy_connect_timeout = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Proxy connection timeout (number/d): ')
+
+        if str(proxy_checking_thread) != 'd':
+            db.proxy_settings['proxy_checking_thread'] = int(proxy_checking_thread)
+        
+        if str(proxy_connect_timeout) != 'd':
+            db.proxy_settings['proxy_connect_timeout'] = int(proxy_connect_timeout)
+        
+        if str(proxy_timeout) != 'd':
+            db.proxy_settings['proxy_timeout'] = int(proxy_timeout)
+
+        if overwrite_valid_proxies != 'd':
+            db.proxy_settings['overwrite_valid_proxies'] = True if overwrite_valid_proxies == 'y' else False
+
+        if check_proxies != 'd':
+            db.proxy_settings['check_proxies'] = True if check_proxies == 'y' else False
+
+        if scrape_proxies != 'd':
+            db.proxy_settings['scrape_proxies'] = True if scrape_proxies == 'y' else False
+
+        if input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Save settings (y/n): ').lower() == 'y':
+            db.save_settings()
 
     @staticmethod
     def get_teams():
         if db.scrape_settings['scrape_cookie'] != "":
-            api = Guilded(f'http://{next(__proxies__)}')
+            api = Guilded(__proxies__)
             api.login_from_token(db.scrape_settings['scrape_cookie'])
             teams = api.get_me()['teams']
 
@@ -378,6 +470,47 @@ class Utils:
             for i, team in enumerate(teams):
                 print(f' #{i} | {team["id"]} | {team["name"]}')
 
+    @staticmethod
+    def channel_spam(message: str, channel_id: str, threads: int, database: Data, single_mod: bool = False):
+        cookie_blacklist = []
+        database.sent_dm = 0
+
+        def send(api: Guilded):
+            cookie = api.session.cookies.get('hmac_signed_session')
+
+            if cookie in cookie_blacklist:
+                return
+
+            try:
+                resp = api.send_message(channel_id, message)
+
+                if resp.status_code == 200:
+                    database.sent_dm += 1
+                    Console.printf(f'({cookie[:30]}) ({database.sent_dm}) Success sent.')
+                else:
+                    database.error_dm += 1
+                    Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({database.error_dm}) Failed ({resp.json()}).')
+
+                    if 'ForbiddenError' or 'NotFoundError' in str(resp.json()):
+                        cookie_blacklist.append(cookie)
+
+            except Exception as e:
+                database.error_dm += 1
+                Console.debug(str(e))
+                Console.printf(f'({Fore.RED}{cookie[:30]}) ({database.error_dm}) Failed.')
+                pass
+
+        while True:
+            Console.printf(f'{Fore.LIGHTGREEN_EX}*~>{Fore.RESET} Starting ChannelSPAM with {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
+            acc = itertools.cycle(database.accounts)
+
+            while True:
+                while threading.active_count() >= threads:
+                    time.sleep(0.3)
+                
+                threading.Thread(target=send, args=[next(acc)]).start()
+
+
 if __name__ == '__main__':
     db = Data()
 
@@ -385,6 +518,8 @@ if __name__ == '__main__':
         with open('./data/valid.txt', 'w+') as f:
             f.truncate(0)
 
+    Console.print_logo()
+    __proxies__ = Utils.load_proxies()
     Console.print_logo()
     Utils.load_accounts(db)
     Console.print_logo()
@@ -413,7 +548,7 @@ if __name__ == '__main__':
 
                 scrape_cookie = db.scrape_settings['scrape_cookie']
 
-                api = Guilded(f'http://{next(__proxies__)}')
+                api = Guilded(__proxies__)
                 api.login_from_token(scrape_cookie, True)
 
                 scrapped_teams = api.get_servers(db.scrape_settings['max_scrape']).json()['allTeams']['teams']
@@ -457,7 +592,7 @@ if __name__ == '__main__':
                 with_role_only = db.scrape_settings['with_role_only']
                 scrape_online = db.scrape_settings['scrape_online']
 
-                api = Guilded(f'http://{next(__proxies__)}')
+                api = Guilded(__proxies__)
                 api.login_from_token(scrape_cookie)
 
                 Utils.get_teams()
@@ -493,8 +628,11 @@ if __name__ == '__main__':
                                     if scrape_online:
                                         if 'userPresenceStatus' not in str(member):
                                             continue
-
-                                    scrapped.append(member[item])
+                                    
+                                    # kek we won't dm the bots :c
+                                    if member['id'] not in db.accounts_ids:
+                                        scrapped.append(member[item])
+                                        
                         except Exception as e:
                             Console.debug(f'Scrape error: {e}')
                             pass
@@ -549,6 +687,20 @@ if __name__ == '__main__':
                     db.ids.append(dm_id)
                 
                 Utils.mass_dm(message, threads, db, True)
+            
+            if options == 2:
+                message = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Message: ')
+                chan_url = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} ChannelUrl: ')
+                
+                guild_id = chan_url.split('/channels/')[1].split('/chat')[0]
+
+                # https://www.guilded.gg/fthshshegdsfsds-Comets/groups/3yq59lr3/channels/ceeaf9f8-f4fa-4980-913f-bbda8de02e6e/chat
+                # https://www.guilded.gg/i/k1b8rxyp?cid=ceeaf9f8-f4fa-4980-913f-bbda8de02e6e&intent=chat
+                #guild_id = chan_url.split('?cid=')[1].split('&intent=chat')[0]
+                
+                #chan_id  = chan_url.split('/channels/')[1].split('/chat')[0]
+                
+                Utils.channel_spam(message, guild_id, threads, db)
 
         if category == 3:
             if options == 0:
@@ -589,7 +741,11 @@ if __name__ == '__main__':
                 Utils.settings_page()
             
             if options == 1:
+                Utils.proxy_settings_page()
+            
+            if options == 2:
                 new_db = Data()
                 db = new_db
                 
+                __proxies__ = Utils.load_proxies()
                 Utils.load_accounts(db)

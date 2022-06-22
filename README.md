@@ -3,18 +3,26 @@
 <p align='center'>
     <b>Mass DM tool for guilded.gg.</b><br>
     <br>
-    <img src='https://media.discordapp.net/attachments/979740087531237399/981716323392454737/unknown.png'>
+    <img src='https://media.discordapp.net/attachments/979740086927261697/989122862428340275/unknown.png'>
 </p>
 
 -----
 
-- [X] **Server scrapper (online/all/with pfp)**
+```
+Known issue: proxy checker "crash"
+```
+
+-----
+
+- [X] **Server scraper (online/all/with pfp)**
 - [X] **email:pass:cookie:id and cookie format**
 - [X] **Proxy support - HTTP/S**
 - [X] **Guild / Team joiner**
-- [X] **Username scrapper**
-- [X] **Avatar scrapper**
-- [X] **Guild scrapper**
+- [X] **Username scraper**
+- [X] **Avatar scraper**
+- [X] **Guild scraper**
+- [X] **Proxy scraper**
+- [X] **Proxy checker**
 - [X] **Mass pfp, bio, avatar changer**
 - [X] **Mass dm**
 - [X] **Silent mode**
@@ -34,12 +42,27 @@
 | `max_scrape` | Max invite to scrape. |
 | `min_member` | Minimum members to scrape. |
 | `overwrite_valid` | Overwrite valid account file. |
-| `login` | Log in account at start (set false to enable silent mode.) |
+| `proxy_checking_thread` | How many threads will check proxies |
+| `check_proxies` | If you want to check proxies |
+| `scrape_proxies` | If you want to scrape proxy from url file |
+| `overwrite_valid_proxies` | Delete dead proxy and replace them by checked one |
+| `proxy_timeout` | Data transfer timeout |
+| `proxy_connect_timeout` | Connection speed timeout |
 
 -----
 
 <details><summary>UPDATE LOGS:</summary>
 <p>
+
+0.0.6
+
+- Proxy config menu / file.
+- Installation file.
+- Channel spammer.
+- Zombie dm fix.
+- Proxy checker.
+- Proxy scraper.
+- Bug fix.
 
 0.0.5
 
@@ -54,14 +77,12 @@
 
 0.0.4
 
-- Guild scrapper
+- Guild scraper
 - Loading proxy error handling
-    
     
 0.0.3
     
 - Scrapping menu
-
 - Mass pfp changer.
 - Config the tool.
 - Onliner.
@@ -71,7 +92,7 @@
 
 0.0.2
 
-- Add Server scrapper (online/all/with pfp etc..)
+- Add Server scraper (online/all/with pfp etc..)
 - Add option to save mass-dm settings, because we are lazy guys :o
 - Add "restart" option to massDm.
 - Handle ratelimit (need to add timer).

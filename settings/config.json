@@ -1,0 +1,8 @@
+{
+    "loading_thread": 300,
+    "save_valid": true,
+    "debug": true,
+    "login": false,
+
+    "overwrite_valid": true
+}

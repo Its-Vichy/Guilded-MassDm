@@ -1,19 +1,21 @@
 from colorama import Fore, init, Style; init()
-import threading, os, json
+import threading, os, json, random
 
-__lock__, __config__, __version__ = threading.Lock(), json.load(open('./config.json')), '0.0.5'
+__lock__, __config__, __version__ = threading.Lock(), json.load(open('./settings/config.json')), '0.0.6'
 
 
 class Console:
     @staticmethod
     def print_logo():
         os.system(f'cls && title G-MassDM - {__version__}' if os.name == 'nt' else 'clear')
+        color = random.choice([Fore.LIGHTMAGENTA_EX, Fore.LIGHTBLUE_EX, Fore.LIGHTGREEN_EX, Fore.LIGHTYELLOW_EX, Fore.YELLOW, Fore.CYAN, Fore.BLUE, Fore.MAGENTA])
+
         print(f'''
- {Fore.YELLOW}  ____ {Fore.LIGHTWHITE_EX}    __  __              {Fore.YELLOW} ____  __  __ {Fore.LIGHTWHITE_EX}
- {Fore.YELLOW} / ___|{Fore.LIGHTWHITE_EX}   |  \/  | __ _ ___ ___{Fore.YELLOW}|  _ \|  \/  |{Fore.LIGHTWHITE_EX}
- {Fore.YELLOW}| |  _ {Fore.LIGHTWHITE_EX}___| |\/| |/ _` / __/ __{Fore.YELLOW}| | | | |\/| |{Fore.LIGHTWHITE_EX}
- {Fore.YELLOW}| |_| |{Fore.LIGHTWHITE_EX}___| |  | | (_| \__ \__ \\{Fore.YELLOW} |_| | |  | |{Fore.LIGHTWHITE_EX}
- {Fore.YELLOW} \____|{Fore.LIGHTWHITE_EX}   |_|  |_|\__,_|___/___/{Fore.YELLOW}____/|_|  |_|{Fore.LIGHTWHITE_EX} {Style.BRIGHT}github.com/its-vichy{Style.RESET_ALL}
+ {color}  ____ {Fore.LIGHTWHITE_EX}    __  __              {color} ____  __  __ {Fore.LIGHTWHITE_EX}
+ {color} / ___|{Fore.LIGHTWHITE_EX}   |  \/  | __ _ ___ ___{color}|  _ \|  \/  |{Fore.LIGHTWHITE_EX}
+ {color}| |  _ {Fore.LIGHTWHITE_EX}___| |\/| |/ _` / __/ __{color}| | | | |\/| |{Fore.LIGHTWHITE_EX}
+ {color}| |_| |{Fore.LIGHTWHITE_EX}___| |  | | (_| \__ \__ \\{color} |_| | |  | |{Fore.LIGHTWHITE_EX}
+ {color} \____|{Fore.LIGHTWHITE_EX}   |_|  |_|\__,_|___/___/{color}____/|_|  |_|{Fore.LIGHTWHITE_EX} {Style.BRIGHT}github.com/its-vichy{Style.RESET_ALL}
         
         ''')
 
@@ -56,6 +58,7 @@ class Console:
             - [{Fore.LIGHTBLUE_EX}5{Fore.LIGHTWHITE_EX}] Mass spoof (bio+status+pfp+online).
         
         [{Fore.YELLOW}4{Fore.LIGHTWHITE_EX}] Util:
-            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Config the tool.
-            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Reload files (id, cookies etc...).
+            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Edit Proxy config.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Edit Scrape config.
+            - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Reload files (id, proxies, cookies etc...).
         ''')
