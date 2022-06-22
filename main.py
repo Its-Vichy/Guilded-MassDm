@@ -487,6 +487,10 @@ class Utils:
                 if resp.status_code == 200:
                     database.sent_dm += 1
                     Console.printf(f'({cookie[:30]}) ({database.sent_dm}) Success sent.')
+                elif 'TooManyRequestsError' in str(resp.json()):
+                    database.ratelimited += 1
+                    Console.printf(f'({Fore.YELLOW}{cookie[:30]}) ({database.ratelimited}) Ratelimited.')
+                    cookie_blacklist.append(cookie)
                 else:
                     database.error_dm += 1
                     Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) ({database.error_dm}) Failed ({resp.json()}).')

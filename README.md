@@ -54,6 +54,11 @@ Known issue: proxy checker "crash"
 <details><summary>UPDATE LOGS:</summary>
 <p>
 
+0.0.61
+
+- Handle Ratelimit on single channel spam.
+- Console menu fix.
+
 0.0.6
 
 - Proxy config menu / file.

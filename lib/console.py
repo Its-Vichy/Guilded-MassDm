@@ -1,7 +1,7 @@
 from colorama import Fore, init, Style; init()
 import threading, os, json, random
 
-__lock__, __config__, __version__ = threading.Lock(), json.load(open('./settings/config.json')), '0.0.6'
+__lock__, __config__, __version__ = threading.Lock(), json.load(open('./settings/config.json')), '0.0.61'
 
 
 class Console:
@@ -58,7 +58,7 @@ class Console:
             - [{Fore.LIGHTBLUE_EX}5{Fore.LIGHTWHITE_EX}] Mass spoof (bio+status+pfp+online).
         
         [{Fore.YELLOW}4{Fore.LIGHTWHITE_EX}] Util:
-            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Edit Proxy config.
-            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Edit Scrape config.
+            - [{Fore.LIGHTBLUE_EX}0{Fore.LIGHTWHITE_EX}] Edit Scrape config.
+            - [{Fore.LIGHTBLUE_EX}1{Fore.LIGHTWHITE_EX}] Edit Proxy config.
             - [{Fore.LIGHTBLUE_EX}2{Fore.LIGHTWHITE_EX}] Reload files (id, proxies, cookies etc...).
         ''')
