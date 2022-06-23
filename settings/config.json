@@ -1,8 +1,10 @@
 {
-    "loading_thread": 300,
+    "loading_thread": 1300,
     "save_valid": true,
-    "debug": true,
+    "debug": false,
     "login": false,
 
-    "overwrite_valid": true
+    "overwrite_valid": true,
+
+    "blacklist_when_error": true
 }

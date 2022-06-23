@@ -1,7 +1,7 @@
 {
     "proxy_checking_thread": 350,
-    "check_proxies": true,
-    "scrape_proxies": true,
+    "check_proxies": false,
+    "scrape_proxies": false,
     "overwrite_valid_proxies": true,
     "proxy_timeout": 5,
     "proxy_connect_timeout": 2

@@ -1,6 +1,6 @@
 import threading, json, time, itertools, math, random, httpx
 from colorama import Fore, init, Style; init()
-from lib.guildead import Guilded
+from lib.guildead import Guilded, Exploit
 from lib.console import Console
 from lib.data import Data
 
@@ -116,6 +116,7 @@ class Utils:
                 time.sleep(1)
 
             email, password, cookie, user_id = account.split(':')
+
             database.accounts_ids.append(user_id)
             t = threading.Thread(target=check, args=[email, password, cookie, user_id])
             thread_list.append(t)
@@ -143,6 +144,9 @@ class Utils:
             else:
                 Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) Join failed.')
 
+                if __config__['blacklist_when_error']:
+                    database.blacklisted_cookie.append(cookie)
+
         thread_list = []
 
         Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Joining {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
@@ -169,7 +173,7 @@ class Utils:
         def dm(api: Guilded, member_id: str):
             cookie = api.session.cookies.get('hmac_signed_session')
 
-            if cookie in cookie_blacklist or member_id in database.locked_dm:
+            if cookie in cookie_blacklist or member_id in database.locked_dm or cookie in database.blacklisted_cookie:
                 return
 
             try:
@@ -471,14 +475,14 @@ class Utils:
                 print(f' #{i} | {team["id"]} | {team["name"]}')
 
     @staticmethod
-    def channel_spam(message: str, channel_id: str, threads: int, database: Data, single_mod: bool = False):
+    def channel_spam(message: str, channel_id: str, threads: int, database: Data):
         cookie_blacklist = []
         database.sent_dm = 0
 
         def send(api: Guilded):
             cookie = api.session.cookies.get('hmac_signed_session')
 
-            if cookie in cookie_blacklist:
+            if cookie in cookie_blacklist or cookie in database.blacklisted_cookie:
                 return
 
             try:
@@ -498,6 +502,9 @@ class Utils:
                     if 'ForbiddenError' or 'NotFoundError' in str(resp.json()):
                         cookie_blacklist.append(cookie)
 
+                        if __config__['blacklist_when_error']:
+                            database.blacklisted_cookie.append(cookie)
+
             except Exception as e:
                 database.error_dm += 1
                 Console.debug(str(e))
@@ -514,6 +521,37 @@ class Utils:
                 
                 threading.Thread(target=send, args=[next(acc)]).start()
 
+    @staticmethod
+    def leave_accounts(invite: str, threads: int, database: Data):
+        def leave(api: Guilded):
+            resp = None
+            cookie = api.session.cookies.get('hmac_signed_session')
+
+            resp = api.leave_server(invite, api.user_id).status_code
+
+            if resp == 200:
+                Console.printf(f'({cookie[:30]}) Success leave.')
+            else:
+                Console.printf(f'({Fore.LIGHTRED_EX}{cookie[:30]}) Leave failed.')
+
+        thread_list = []
+
+        Console.printf(f'{Fore.YELLOW}*~>{Fore.RESET} Leaving {Style.BRIGHT}{len(database.accounts)}{Style.RESET_ALL} accounts...\n')
+        start_time = time.time()
+
+        for account in database.accounts:
+            while threading.active_count() >= threads:
+                time.sleep(1)
+
+            t = threading.Thread(target=leave, args=[account])
+            thread_list.append(t)
+            t.start()
+
+        for thread in thread_list:
+            thread.join()
+
+        Console.printf(f'\n{Fore.LIGHTGREEN_EX}+~>{Fore.RESET} Leaved in {Style.BRIGHT}{math.floor(time.time() - start_time)}{Style.RESET_ALL}s')
+        input('press enter...')
 
 if __name__ == '__main__':
     db = Data()
@@ -654,12 +692,22 @@ if __name__ == '__main__':
         if category == 1:
             threads = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
             
-            if options == 1:
-                Utils.get_teams()
+            Utils.get_teams()
             
             invite = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} InviteCode/TeamID: ')
 
-            Utils.join_accounts(invite, options, threads, db)
+            if options in [0, 1]:
+                Utils.join_accounts(invite, options, threads, db)
+            
+            if options == 2:
+                Utils.leave_accounts(invite, threads, db)
+            
+            if options == 3:
+                code = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} InviteCode: ')
+
+                while True:
+                    Utils.join_accounts(code, options, threads, db)
+                    Utils.leave_accounts(invite, threads, db)
 
         if category == 2:
             threads   = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Max threads: '))
@@ -683,27 +731,30 @@ if __name__ == '__main__':
                 Utils.mass_dm(message, threads, db)
 
             if options == 1:
-                message = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Message: ')
+                message = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Message (leave blank = from file): ')
                 dm_id = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} UserID: ')
                 dm_number = int(input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} NumberOfDms / tokens: '))
 
                 for _ in range(dm_number*len(db.accounts)):
                     db.ids.append(dm_id)
-                
+
+                if message == "":
+                    message = open('./data/message.txt', 'r+', encoding='utf-8', errors='ignore').read()
+
                 Utils.mass_dm(message, threads, db, True)
             
             if options == 2:
-                message = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Message: ')
-                chan_url = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} ChannelUrl: ')
+                message = input(f'\n{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Message (leave blank= from file, exploit= invisible message): ')
+                chan_url = input(f'{Style.RESET_ALL}{Fore.YELLOW}>{Fore.RESET} Channel url: ')
                 
                 guild_id = chan_url.split('/channels/')[1].split('/chat')[0]
+                
+                if message == "":
+                    message = open('./data/message.txt', 'r+', encoding='utf-8', errors='ignore').read()
+                
+                if message == "exploit":
+                    message = Exploit.blank_message()
 
-                # https://www.guilded.gg/fthshshegdsfsds-Comets/groups/3yq59lr3/channels/ceeaf9f8-f4fa-4980-913f-bbda8de02e6e/chat
-                # https://www.guilded.gg/i/k1b8rxyp?cid=ceeaf9f8-f4fa-4980-913f-bbda8de02e6e&intent=chat
-                #guild_id = chan_url.split('?cid=')[1].split('&intent=chat')[0]
-                
-                #chan_id  = chan_url.split('/channels/')[1].split('/chat')[0]
-                
                 Utils.channel_spam(message, guild_id, threads, db)
 
         if category == 3:

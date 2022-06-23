@@ -3,7 +3,7 @@
 <p align='center'>
     <b>Mass DM tool for guilded.gg.</b><br>
     <br>
-    <img src='https://media.discordapp.net/attachments/979740086927261697/989122862428340275/unknown.png'>
+    <img src='https://media.discordapp.net/attachments/979735153435869224/989496593839452200/unknown.png'>
 </p>
 
 -----
@@ -22,7 +22,7 @@ Your account will be terminated every somes hours if you are making somes spam, 
 - [X] **Server scraper (online/all/with pfp)**
 - [X] **email:pass:cookie:id and cookie format**
 - [X] **Proxy support - HTTP/S**
-- [X] **Guild / Team joiner**
+- [X] **Guild / Team joiner + Leaver**
 - [X] **Username scraper**
 - [X] **Avatar scraper**
 - [X] **Guild scraper**
@@ -40,7 +40,7 @@ Your account will be terminated every somes hours if you are making somes spam, 
 | `scrape_default_pfp` | Scrape members with default pfp, helpfull to ignore bots. |
 | `with_role_only` | Scrape members with role only (ex: anti-bot verification), helpfull to ignore bots. |
 | `scrape_online` | Scrape only connected members. |
-| `loading_thread` | The number of thread that will be used to connect trought account. |
+| `loading_thread` | The number of thread that will be used to connect through account. |
 | `save_valid` | Save valid account on text file. |
 | `debug` | If you want to see errors, or debug the code. |
 | `join_main` | Join scrapped server with the scrape account. |
@@ -53,11 +53,25 @@ Your account will be terminated every somes hours if you are making somes spam, 
 | `overwrite_valid_proxies` | Delete dead proxy and replace them by checked one |
 | `proxy_timeout` | Data transfer timeout |
 | `proxy_connect_timeout` | Connection speed timeout |
+| `blacklist_when_error` | Blacklist account when they got error while join, dm etc... this is used to avoid requests with account that are not on the targeted server |
 
 -----
 
 <details><summary>UPDATE LOGS:</summary>
 <p>
+
+0.0.7
+
+- Title update + Linux support.
+- Member counter.
+- UI Revised.
+- Guild Leaver.
+- Limit single channel spam to 1 message (aimed to bypass verification bot)
+- Blank message Exploit spam.
+- Blacklist account when got a error.
+- Join/Leave spammer. (token will get ratelimited btw..)
+- Forward all requests through proxies. (not only post)
+- Load message from file for channel spam, single dm spam
 
 0.0.61
 

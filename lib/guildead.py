@@ -20,13 +20,43 @@ class Guilded:
         self.user = {}
         self.profil = {}
     
-    def post(self, path: str, json: dict) -> Response:
+    def post(self, path: str, json: dict):
         while True:
             p = 'http://' + next(self.proxy)
             self.session.proxies = {"http": p, "https": p} if self.proxy else None
 
             try:
                 return self.session.post(path, json=json)
+            except Exception as e:
+                continue
+        
+    def put(self, path: str, json: dict=None):
+        while True:
+            p = 'http://' + next(self.proxy)
+            self.session.proxies = {"http": p, "https": p} if self.proxy else None
+
+            try:
+                return self.session.put(path, json=json)
+            except Exception as e:
+                continue
+    
+    def delete(self, path: str):
+        while True:
+            p = 'http://' + next(self.proxy)
+            self.session.proxies = {"http": p, "https": p} if self.proxy else None
+
+            try:
+                return self.session.delete(path)
+            except Exception as e:
+                continue
+    
+    def get(self, path: str):
+        while True:
+            p = 'http://' + next(self.proxy)
+            self.session.proxies = {"http": p, "https": p} if self.proxy else None
+
+            try:
+                return self.session.get(path)
             except Exception as e:
                 continue
 
@@ -54,7 +84,7 @@ class Guilded:
             self.get_me()
     
     def get_me(self):
-        resp = self.session.get(f'{self.base_url}/me?isLogin=false&v2=true').json()
+        resp = self.get(f'{self.base_url}/me?isLogin=false&v2=true').json()
         self.user = resp['user']
         self.user_id = self.user['id']
 
@@ -97,7 +127,7 @@ class Guilded:
         return r
     
     def edit_message(self, channel_id: str, message_id: str, message: str, confirmed: bool= False, isSilent: bool= False, isPrivate: bool= False, repliesTo: list= []):
-        r = self.session.put(f'{self.base_url}/channels/{channel_id}/messages/{message_id}', json={
+        r = self.put(f'{self.base_url}/channels/{channel_id}/messages/{message_id}', json={
             "messageId": message_id,
             "content": {
                 "object": "value",
@@ -133,11 +163,10 @@ class Guilded:
         return r.json()
     
     def delete_message(self, channel_id: str, message_id: str):
-        r = self.session.delete(f'{self.base_url}/channels/{channel_id}/messages/{message_id}')
-        return r.json()
+        return self.delete(f'{self.base_url}/channels/{channel_id}/messages/{message_id}').json()
     
     def join_server(self, invite_code: str):
-        r = self.session.put(f'{self.base_url}/invites/{invite_code}')
+        r = self.put(f'{self.base_url}/invites/{invite_code}')
         return r
     
     def add_friend(self, ids: list):
@@ -145,17 +174,17 @@ class Guilded:
         return r.json()
     
     def check_mail_verified(self):
-        r = self.session.get(f'{self.base_url}/users/me/verification')
+        r = self.get(f'{self.base_url}/users/me/verification')
         return r.json()
     
     def get_server_info(self, invite_code: str):
-        r = self.session.get(f'{self.base_url}/content/route/metadata?route=%2F{invite_code}')
+        r = self.get(f'{self.base_url}/content/route/metadata?route=%2F{invite_code}')
         return r.json()
 
     def join_team(self, team_id: str):
         user_id = self.user_id
         
-        r = self.session.put(f'{self.base_url}/teams/{team_id}/members/{user_id}/join', json={'inviteId': None})
+        r = self.put(f'{self.base_url}/teams/{team_id}/members/{user_id}/join', json={'inviteId': None})
         return r
 
     def set_activity(self, number: int = 1):
@@ -165,7 +194,7 @@ class Guilded:
         return r
     
     def ping(self):
-        r = self.session.put(f'{self.base_url}/users/me/ping', json={})
+        r = self.put(f'{self.base_url}/users/me/ping', json={})
         return r
     
     def set_status(self, text: str, customReactionId: int = 90002573):
@@ -204,7 +233,7 @@ class Guilded:
     def set_bio(self, text: str):
         user_id = self.user_id
 
-        r = self.session.put(f'{self.base_url}/users/{user_id}/profilev2', json={"userId": user_id,"aboutInfo":{"tagLine": text}})
+        r = self.put(f'{self.base_url}/users/{user_id}/profilev2', json={"userId": user_id,"aboutInfo":{"tagLine": text}})
         return r
 
     def add_pfp(self, url):
@@ -213,13 +242,13 @@ class Guilded:
         return self.session.post(f'{self.base_url}/users/me/profile/images', json={'imageUrl': url})
 
     def get_guild_member(self, guild_id: str):
-        return self.session.get(f'{self.base_url}/teams/{guild_id}/members')
-
-    #def get_guild_member_detail(self, guild_id: str):
-    #    return self.session.get(f'{self.base_url}/teams/{guild_id}/members/detail')
+        return self.get(f'{self.base_url}/teams/{guild_id}/members')
     
     def open_dm_channel(self, user_id: str):
         return self.session.post(f'{self.base_url}/users/{self.user_id}/channels', json={"users":[{"id": user_id}]})
 
     def get_servers(self, limit: int=10):
         return self.session.post(f'{self.base_url}/explore/teams', json={"filters":{},"limit":limit,"sections":["allTeams"],"offset":{"createdAt":"2022-05-20T01:11:58.827Z"}})
+
+    def leave_server(self, guild_id: str, member_id: str):
+        return self.delete(f'{self.base_url}/teams/{guild_id}/members/{member_id}')
